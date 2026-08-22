@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock,
@@ -31,7 +31,45 @@ export const EmployeeDashboard: React.FC = () => {
 
   const { user } = useAuth();
 
-  const currentUser = employees.find(e => e.employeeId === user?.employeeId) || employees[0];
+  const fallbackEmp: any = {
+    id: 'emp-1',
+    employeeId: user?.employeeId || 'DF-1001',
+    loginId: user?.loginId || 'OISAJE20220001',
+    name: user?.name || 'Sarah Jenkins',
+    email: user?.email || 'sarah.j@dayflow.io',
+    phone: user?.phone || '+1 (555) 234-5678',
+    avatar: user?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    status: 'Active',
+    workInfo: {
+      department: 'Design',
+      jobPosition: 'Lead Product Designer',
+      manager: 'Marcus Vance',
+      workLocation: 'San Francisco HQ',
+      workAddress: '100 Montgomery St, San Francisco, CA',
+      workSchedule: 'Standard 40 Hours (9 AM - 5 PM)',
+      joinDate: '2022-03-15'
+    },
+    privateInfo: {
+      address: '424 Market Street, Apt 5B, San Francisco, CA',
+      privateEmail: 'sarah.jenkins.personal@gmail.com',
+      bankName: 'Silicon Valley Bank',
+      bankAccountNumber: '987654321098',
+      bankIfscOrRouting: 'SVB120934'
+    },
+    hrSettings: {
+      badgeId: 'BADGE-8841',
+      pinCode: '1001',
+      role: 'employee',
+      salary: 600000,
+      loginId: user?.loginId || 'OISAJE20220001'
+    },
+    leaveBalance: { casual: 12, casualUsed: 3, sick: 10, sickUsed: 1, annual: 18, annualUsed: 5, maternity: 60, maternityUsed: 0 },
+    attendanceToday: 'Present'
+  };
+
+  const currentUser = (employees && employees.length > 0)
+    ? (employees.find(e => e.employeeId === user?.employeeId || e.loginId === user?.loginId || e.email === user?.email) || employees[0])
+    : fallbackEmp;
 
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [leaveForm, setLeaveForm] = useState({
@@ -42,6 +80,17 @@ export const EmployeeDashboard: React.FC = () => {
   });
 
   const [selectedPayslip, setSelectedPayslip] = useState<any | null>(null);
+
+  const [currentTime, setCurrentTime] = useState<string>(() => {
+    return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const formatTimer = (totalSeconds: number) => {
     const hrs = Math.floor(totalSeconds / 3600);
@@ -176,22 +225,29 @@ export const EmployeeDashboard: React.FC = () => {
               </Badge>
             </div>
 
-            <div className="my-6 text-center">
-              <div className="text-4xl md:text-5xl font-mono font-extrabold text-slate-900 dark:text-white tracking-wider">
+            <div className="my-5 text-center space-y-2">
+              {/* Live Wall Clock */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 text-[11px] font-bold font-mono">
+                <Clock className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 animate-spin" style={{ animationDuration: '6s' }} />
+                <span>{currentTime}</span>
+              </div>
+
+              {/* Work Session Timer */}
+              <div className="text-4xl md:text-5xl font-mono font-black text-slate-900 dark:text-white tracking-wider">
                 {formatTimer(workSeconds)}
               </div>
-              <p className="text-xs text-slate-400 mt-1 font-medium">
-                {currentUser.workInfo.workSchedule}
+              <p className="text-xs text-slate-400 font-medium">
+                {isPunchedIn ? '🟢 Active Working Session' : '⚪ Shift Not Started (9 AM - 5 PM)'}
               </p>
 
-              <div className="mt-5 space-y-1.5 text-left">
+              <div className="mt-4 space-y-1.5 text-left">
                 <div className="flex justify-between text-xs font-bold text-slate-600 dark:text-slate-300">
-                  <span>Shift Completion</span>
+                  <span>Shift Completion (8 Hours)</span>
                   <span>{progressPercent}%</span>
                 </div>
                 <div className="w-full h-2.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
                   <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-brand-500 to-emerald-500"
+                    className="h-full rounded-full bg-gradient-to-r from-purple-500 to-emerald-500"
                     initial={{ width: 0 }}
                     animate={{ width: `${progressPercent}%` }}
                     transition={{ duration: 0.8, ease: 'easeOut' }}

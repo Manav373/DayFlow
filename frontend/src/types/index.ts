@@ -26,17 +26,56 @@ export interface WorkInfo {
 }
 
 export interface PrivateInfo {
+  dateOfBirth?: string;
+  address: string;
+  nationality?: string;
   privateEmail: string;
-  privatePhone: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
+  gender?: string;
+  maritalStatus?: string;
+  dateOfJoining?: string;
   bankName: string;
   bankAccountNumber: string;
   bankIfscOrRouting: string;
-  identificationNumber: string;
-  address: string;
-  dateOfBirth?: string;
-  gender?: string;
+  panNumber?: string;
+  uanNumber?: string;
+  empCode?: string;
+  identificationNumber?: string;
+  privatePhone?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+}
+
+export interface ResumeInfo {
+  about: string;
+  whatILove: string;
+  interests: string;
+  skills: string[];
+  certifications: string[];
+}
+
+export interface SalaryBreakdown {
+  wageType: 'Fixed wage';
+  monthWage: number;
+  yearlyWage: number;
+  workingDaysWeek: number;
+  breakTimeHours: number;
+  basicSalary: number;
+  basicPct: number;
+  hra: number;
+  hraPct: number;
+  standardAllowance: number;
+  standardAllowancePct: number;
+  performanceBonus: number;
+  performanceBonusPct: number;
+  lta: number;
+  ltaPct: number;
+  fixedAllowance: number;
+  fixedAllowancePct: number;
+  pfEmployee: number;
+  pfEmployeePct: number;
+  pfEmployer: number;
+  pfEmployerPct: number;
+  professionalTax: number;
 }
 
 export interface HRSettings {
@@ -71,6 +110,8 @@ export interface Employee {
   status: EmployeeStatus;
   workInfo: WorkInfo;
   privateInfo: PrivateInfo;
+  resumeInfo?: ResumeInfo;
+  salaryBreakdown?: SalaryBreakdown;
   hrSettings: HRSettings;
   leaveBalance: LeaveBalance;
   attendanceToday?: AttendanceStatus;

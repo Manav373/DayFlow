@@ -4,81 +4,127 @@ import { AttendanceRecord } from '../types/index.js';
 
 export const attendanceRouter = Router();
 
-// Get attendance records
+// GET /api/attendance
 attendanceRouter.get('/', (req: Request, res: Response): void => {
-  const { date, status, employeeId } = req.query;
-  let result = [...db.attendance];
+  const { employeeId, date } = req.query;
 
-  if (date) {
-    result = result.filter((a) => a.date === date);
-  }
-  if (status && status !== 'All') {
-    result = result.filter((a) => a.status === status);
-  }
-  if (employeeId) {
-    result = result.filter((a) => a.employeeId === employeeId);
-  }
+  try {
+    let query = 'SELECT * FROM attendance';
+    const params: any[] = [];
 
-  res.json(result);
+    if (employeeId && date) {
+      query += ' WHERE employeeId = ? AND date = ?';
+      params.push(employeeId, date);
+    } else if (employeeId) {
+      query += ' WHERE employeeId = ?';
+      params.push(employeeId);
+    } else if (date) {
+      query += ' WHERE date = ?';
+      params.push(date);
+    }
+
+    query += ' ORDER BY date DESC, checkIn DESC';
+    const records = db.prepare(query).all(...params);
+    res.json(records);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Database read error: ' + err.message });
+  }
 });
 
-// Quick Punch (Clock In / Clock Out) - Supports Kiosk PIN / Badge or Employee ID
+// POST /api/attendance/punch (Biometric / Systray Check In / Check Out)
 attendanceRouter.post('/punch', (req: Request, res: Response): void => {
-  const { employeeId, badgeId, pinCode } = req.body;
+  const { employeeId, badgeOrPin, name, department, avatar } = req.body;
 
-  let emp = db.employees.find((e) => {
-    if (employeeId && e.employeeId === employeeId) return true;
-    if (badgeId && e.hrSettings.badgeId === badgeId) return true;
-    if (pinCode && e.hrSettings.pinCode === pinCode) return true;
-    return false;
-  });
+  try {
+    let empId = employeeId;
+    let empName = name || 'Employee';
+    let empDept = department || 'General';
+    let empAvatar = avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
 
-  if (!emp) {
-    res.status(404).json({ error: 'Employee not found with provided credentials' });
-    return;
-  }
+    // If punch by badge or PIN code
+    if (badgeOrPin) {
+      const allEmps = db.prepare('SELECT * FROM employees').all() as any[];
+      const matched = allEmps.find((e) => {
+        const hr = JSON.parse(e.hrSettings || '{}');
+        return hr.badgeId === badgeOrPin || hr.pinCode === badgeOrPin || e.employeeId === badgeOrPin || e.loginId === badgeOrPin;
+      });
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (!matched) {
+        res.status(404).json({ error: 'Invalid Badge ID, PIN Code, or Login ID.' });
+        return;
+      }
 
-  const existingRecord = db.attendance.find((a) => a.employeeId === emp.employeeId && a.date === todayStr);
+      empId = matched.employeeId;
+      empName = matched.name;
+      empDept = JSON.parse(matched.workInfo || '{}').department || 'General';
+      empAvatar = matched.avatar;
+    }
 
-  if (existingRecord) {
-    // Punch Out
-    existingRecord.checkOut = timeStr;
-    existingRecord.workHours = '8h 00m (Completed)';
-    emp.attendanceToday = 'Present';
+    if (!empId) {
+      res.status(400).json({ error: 'Employee identifier is required for punch log.' });
+      return;
+    }
 
-    res.json({
-      action: 'check_out',
-      time: timeStr,
-      employee: emp,
-      record: existingRecord
-    });
-  } else {
-    // Punch In
-    const newRecord: AttendanceRecord = {
-      id: `att-${Date.now()}`,
-      employeeId: emp.employeeId,
-      employeeName: emp.name,
-      employeeAvatar: emp.avatar,
-      department: emp.workInfo.department,
-      date: todayStr,
-      checkIn: timeStr,
-      checkOut: '--:--',
-      workHours: '0h 01m (Active)',
-      overtime: '0h 00m',
-      status: 'Present'
-    };
+    const today = new Date().toISOString().split('T')[0];
+    const nowTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-    db.attendance.unshift(newRecord);
-    emp.attendanceToday = 'Present';
+    // Check if employee has an open checkIn for today
+    const openRecord = db.prepare(`
+      SELECT * FROM attendance
+      WHERE employeeId = ? AND date = ? AND (checkOut = '--' OR checkOut IS NULL OR checkOut = '')
+    `).get(empId, today) as AttendanceRecord | undefined;
 
-    res.json({
-      action: 'check_in',
-      time: timeStr,
-      employee: emp,
-      record: newRecord
-    });
+    if (!openRecord) {
+      // Punch In (Create new active session)
+      const newRecord: AttendanceRecord = {
+        id: `att-${Date.now()}`,
+        employeeId: empId,
+        employeeName: empName,
+        employeeAvatar: empAvatar,
+        department: empDept,
+        date: today,
+        checkIn: nowTime,
+        checkOut: '--',
+        workHours: '0h 0m',
+        overtime: '0m',
+        status: 'Present'
+      };
+
+      db.prepare(`
+        INSERT INTO attendance (id, employeeId, employeeName, employeeAvatar, department, date, checkIn, checkOut, workHours, overtime, status)
+        VALUES (@id, @employeeId, @employeeName, @employeeAvatar, @department, @date, @checkIn, @checkOut, @workHours, @overtime, @status)
+      `).run(newRecord);
+
+      db.prepare('UPDATE employees SET attendanceToday = ? WHERE employeeId = ?').run('Present', empId);
+
+      res.status(201).json({
+        action: 'check_in',
+        message: `Welcome, ${empName}! Punched IN at ${nowTime}`,
+        record: newRecord
+      });
+    } else {
+      // Punch Out (Close active session)
+      const checkOutTime = nowTime;
+      const hoursLogged = '8h 00m';
+
+      db.prepare(`
+        UPDATE attendance SET
+          checkOut = ?,
+          workHours = ?
+        WHERE id = ?
+      `).run(checkOutTime, hoursLogged, openRecord.id);
+
+      db.prepare('UPDATE employees SET attendanceToday = ? WHERE employeeId = ?').run('Present', empId);
+
+      const updated = db.prepare('SELECT * FROM attendance WHERE id = ?').get(openRecord.id);
+
+      res.json({
+        action: 'check_out',
+        message: `Goodbye, ${empName}! Punched OUT at ${checkOutTime}`,
+        record: updated
+      });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: 'Database punch logging error: ' + err.message });
   }
 });

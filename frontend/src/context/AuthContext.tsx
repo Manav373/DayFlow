@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole } from '../types';
+import { api } from '../services/api';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   login: (loginIdOrEmail: string, password?: string) => Promise<boolean>;
-  quickLoginAs: (role: UserRole) => void;
+  quickLoginAs: (role: UserRole) => Promise<void>;
   logout: () => void;
   register: (name: string, email: string, password?: string, role?: UserRole, companyName?: string, companyLogo?: string, phone?: string) => Promise<boolean>;
   updateUserCompany: (companyName: string, companyLogo?: string) => void;
@@ -49,22 +50,6 @@ const demoUsers: Record<UserRole, User> = {
   }
 };
 
-const allUsers: User[] = [
-  demoUsers.admin,
-  demoUsers.hr_officer,
-  demoUsers.employee,
-  {
-    id: 'usr-4',
-    loginId: 'OIALRI20210002',
-    email: 'alex.rivera@dayflow.io',
-    name: 'Alex Rivera',
-    role: 'employee',
-    employeeId: 'DF-1002',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    companyName: 'Odoo India'
-  }
-];
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('dayflow_auth_user');
@@ -75,7 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return demoUsers.admin;
       }
     }
-    return demoUsers.admin; // default active session
+    return demoUsers.admin;
   });
 
   useEffect(() => {
@@ -83,80 +68,123 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('dayflow_auth_user', JSON.stringify(user));
     } else {
       localStorage.removeItem('dayflow_auth_user');
+      localStorage.removeItem('dayflow_token');
     }
   }, [user]);
 
-  const login = async (loginIdOrEmail: string, password?: string): Promise<boolean> => {
-    const trimmed = loginIdOrEmail.trim().toLowerCase();
-
-    // Match either Email OR Login ID
-    const matched = allUsers.find(
-      (u) =>
-        u.email.toLowerCase() === trimmed ||
-        (u.loginId && u.loginId.toLowerCase() === trimmed)
-    );
-
-    if (matched) {
-      setUser(matched);
-      return true;
+  const login = async (loginIdOrEmail: string, password = 'password123'): Promise<boolean> => {
+    try {
+      const response = await api.login(loginIdOrEmail, password);
+      if (response && response.user) {
+        setUser(response.user);
+        if (response.token) {
+          localStorage.setItem('dayflow_token', response.token);
+        }
+        return true;
+      }
+    } catch (err) {
+      console.warn('Backend login fallback to local cache:', err);
+      // Fallback
+      const trimmed = loginIdOrEmail.trim().toLowerCase();
+      const matched = Object.values(demoUsers).find(
+        (u) => u.email.toLowerCase() === trimmed || (u.loginId && u.loginId.toLowerCase() === trimmed)
+      );
+      if (matched) {
+        setUser(matched);
+        return true;
+      }
     }
-
-    // Default fallback: create temporary session
-    if (trimmed.includes('@') || trimmed.length > 3) {
-      const isManager = trimmed.includes('admin') || trimmed.includes('hr');
-      const newUser: User = {
-        id: `usr-${Date.now()}`,
-        loginId: trimmed.toUpperCase(),
-        email: trimmed.includes('@') ? trimmed : `${trimmed.toLowerCase()}@dayflow.io`,
-        name: trimmed.includes('@') ? trimmed.split('@')[0].replace('.', ' ') : 'Employee User',
-        role: isManager ? (trimmed.includes('hr') ? 'hr_officer' : 'admin') : 'employee',
-        employeeId: isManager ? 'DF-1004' : 'DF-1001',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-        companyName: 'Odoo India'
-      };
-      setUser(newUser);
-      return true;
-    }
-
     return false;
   };
 
-  const quickLoginAs = (role: UserRole) => {
-    setUser(demoUsers[role]);
+  const quickLoginAs = async (role: UserRole) => {
+    const targetUser = demoUsers[role];
+    try {
+      if (targetUser.loginId) {
+        const response = await api.login(targetUser.loginId, 'password123');
+        if (response?.user) {
+          setUser(response.user);
+          if (response.token) localStorage.setItem('dayflow_token', response.token);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Quick login fallback:', e);
+    }
+    setUser(targetUser);
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('dayflow_auth_user');
+    localStorage.removeItem('dayflow_token');
   };
 
   const register = async (
     name: string,
     email: string,
-    _password?: string,
+    password = 'password123',
     role: UserRole = 'admin',
-    companyName: string = 'Odoo India',
-    companyLogo?: string,
-    phone?: string
+    companyName = 'Odoo India',
+    companyLogo = '',
+    phone = ''
   ): Promise<boolean> => {
-    const newUser: User = {
-      id: `usr-${Date.now()}`,
-      loginId: `OI${name.substring(0, 2).toUpperCase()}20260001`,
-      email,
-      name,
-      role,
-      companyName,
-      companyLogo,
-      phone,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
-    };
-    allUsers.push(newUser);
-    setUser(newUser);
-    return true;
+    try {
+      const response = await api.register({
+        name,
+        email,
+        password,
+        role,
+        companyName,
+        companyLogo,
+        phone
+      });
+
+      if (response && response.user) {
+        setUser(response.user);
+        if (response.token) localStorage.setItem('dayflow_token', response.token);
+        return true;
+      }
+    } catch (err) {
+      console.warn('Backend register error, local fallback:', err);
+      const companyInitials = companyName
+        .split(' ')
+        .slice(0, 2)
+        .map(w => w[0]?.toUpperCase() || '')
+        .join('');
+      const nameParts = name.trim().split(' ');
+      const f2 = (nameParts[0] || 'AD').substring(0, 2).toUpperCase().padEnd(2, 'X');
+      const l2 = (nameParts[1] || nameParts[0] || 'MI').substring(0, 2).toUpperCase().padEnd(2, 'X');
+      const currentYear = new Date().getFullYear();
+      const generatedLoginId = `${companyInitials || 'DF'}${f2}${l2}${currentYear}0001`;
+
+      const newUser: User = {
+        id: `usr-${Date.now()}`,
+        loginId: generatedLoginId,
+        email,
+        name,
+        role,
+        employeeId: 'DF-1004',
+        avatar: companyLogo || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+        companyName,
+        companyLogo,
+        phone
+      };
+
+      setUser(newUser);
+      return true;
+    }
+    return false;
   };
 
   const updateUserCompany = (companyName: string, companyLogo?: string) => {
     if (user) {
-      setUser({ ...user, companyName, companyLogo: companyLogo || user.companyLogo });
+      const updated = {
+        ...user,
+        companyName,
+        ...(companyLogo ? { companyLogo } : {})
+      };
+      setUser(updated);
     }
   };
 

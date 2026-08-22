@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { initDatabase } from './data/db.js';
 import { authRouter } from './routes/auth.js';
 import { employeesRouter } from './routes/employees.js';
 import { attendanceRouter } from './routes/attendance.js';
@@ -9,6 +10,9 @@ import { payrollRouter } from './routes/payroll.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Initialize SQLite database and tables
+initDatabase();
+
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
@@ -16,7 +20,8 @@ app.use(express.json());
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'online',
-    service: 'DayFlow Unified HRMS API',
+    service: 'DayFlow Unified HRMS SQLite API',
+    database: 'SQLite (dayflow.db)',
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
@@ -30,5 +35,5 @@ app.use('/api/leaves', leavesRouter);
 app.use('/api/payroll', payrollRouter);
 
 app.listen(PORT, () => {
-  console.log(`🚀 DayFlow HRMS API Server running on port ${PORT}`);
+  console.log(`🚀 DayFlow HRMS SQLite API Server running on port ${PORT}`);
 });

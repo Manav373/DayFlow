@@ -1,49 +1,49 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../data/db.js';
+import { PayrollRecord } from '../types/index.js';
 
 export const payrollRouter = Router();
 
-// Get payroll list
+// GET /api/payroll
 payrollRouter.get('/', (req: Request, res: Response): void => {
-  const { status, employeeId } = req.query;
-  let result = [...db.payroll];
+  const { employeeId } = req.query;
 
-  if (status && status !== 'All') {
-    result = result.filter((p) => p.status === status);
-  }
-  if (employeeId) {
-    result = result.filter((p) => p.employeeId === employeeId);
-  }
+  try {
+    let query = 'SELECT * FROM payroll';
+    const params: any[] = [];
 
-  res.json(result);
+    if (employeeId) {
+      query += ' WHERE employeeId = ?';
+      params.push(employeeId);
+    }
+
+    query += ' ORDER BY paymentDate DESC';
+    const records = db.prepare(query).all(...params);
+    res.json(records);
+  } catch (err: any) {
+    res.status(500).json({ error: 'Database read error: ' + err.message });
+  }
 });
 
-// Update single payroll status
+// PUT /api/payroll/:id/status
 payrollRouter.put('/:id/status', (req: Request, res: Response): void => {
   const { id } = req.params;
   const { status } = req.body;
 
-  const item = db.payroll.find((p) => p.id === id);
-  if (!item) {
-    res.status(404).json({ error: 'Payroll entry not found' });
+  if (!status || !['Paid', 'Processing', 'Pending'].includes(status)) {
+    res.status(400).json({ error: 'Valid status (Paid, Processing, Pending) is required.' });
     return;
   }
 
-  item.status = status;
-  if (status === 'Paid') {
-    item.paymentDate = new Date().toISOString().split('T')[0];
+  try {
+    const info = db.prepare('UPDATE payroll SET status = ? WHERE id = ?').run(status, id);
+    if (info.changes === 0) {
+      res.status(404).json({ error: 'Payroll record not found.' });
+      return;
+    }
+    const updated = db.prepare('SELECT * FROM payroll WHERE id = ?').get(id);
+    res.json({ message: `Payroll status updated to ${status}.`, record: updated });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Database update error: ' + err.message });
   }
-
-  res.json(item);
-});
-
-// Disburse all batch
-payrollRouter.post('/disburse-all', (_req: Request, res: Response): void => {
-  const today = new Date().toISOString().split('T')[0];
-  db.payroll.forEach((p) => {
-    p.status = 'Paid';
-    p.paymentDate = today;
-  });
-
-  res.json({ message: 'All batch payrolls marked as Paid', count: db.payroll.length });
 });
