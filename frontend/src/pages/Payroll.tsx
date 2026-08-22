@@ -9,6 +9,7 @@ import {
   Printer
 } from 'lucide-react';
 import { useHRMS } from '../context/HRMSContext';
+import { useAuth } from '../context/AuthContext';
 import { PayrollRecord } from '../types';
 import { Badge } from '../components/common/Badge';
 import { StatCard } from '../components/common/StatCard';
@@ -18,18 +19,27 @@ export const Payroll: React.FC = () => {
   const {
     payrollRecords,
     updatePayrollStatus,
-    stats
+    stats,
+    employees
   } = useHRMS();
+
+  const { user } = useAuth();
+  const isManager = user?.role === 'admin' || user?.role === 'hr_officer';
+  const currentEmp = employees.find(e => e.employeeId === user?.employeeId) || employees[0];
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
   const [selectedPayslip, setSelectedPayslip] = useState<PayrollRecord | null>(null);
 
-  const totalDisbursed = payrollRecords.reduce((acc, curr) => acc + curr.netSalary, 0);
-  const totalTaxes = payrollRecords.reduce((acc, curr) => acc + curr.taxDeduction, 0);
-  const totalGross = payrollRecords.reduce((acc, curr) => acc + curr.grossSalary, 0);
+  const recordsToDisplay = isManager
+    ? payrollRecords
+    : payrollRecords.filter((p) => p.employeeId === user?.employeeId || p.employeeName === user?.name);
 
-  const filteredRecords = payrollRecords.filter((rec) => {
+  const totalDisbursed = recordsToDisplay.reduce((acc, curr) => acc + curr.netSalary, 0);
+  const totalTaxes = recordsToDisplay.reduce((acc, curr) => acc + curr.taxDeduction, 0);
+  const totalGross = recordsToDisplay.reduce((acc, curr) => acc + curr.grossSalary, 0);
+
+  const filteredRecords = recordsToDisplay.filter((rec) => {
     const matchesSearch =
       rec.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       rec.employeeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -54,61 +64,94 @@ export const Payroll: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Payroll Management
+            {isManager ? 'Payroll Management' : 'My Payslips & Compensation'}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            August 2026 disbursement cycle & automated tax deductions
+            {isManager
+              ? 'August 2026 disbursement cycle & automated tax deductions'
+              : 'View and download your monthly salary statements, taxes, and benefits'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleRunBatch}
-            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition"
-          >
-            <CheckCircle className="w-4 h-4" />
-            Approve & Disburse Batch
-          </button>
-        </div>
+        {isManager && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRunBatch}
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition"
+            >
+              <CheckCircle className="w-4 h-4" />
+              Approve & Disburse Batch
+            </button>
+          </div>
+        )}
       </div>
 
       {/* KPI Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard
-          title="Total Net Payout"
-          value={`$${totalDisbursed.toLocaleString()}`}
-          change="August 2026 cycle"
-          trend="up"
-          icon={DollarSign}
-          iconColor="text-emerald-600"
-          iconBg="bg-emerald-50 dark:bg-emerald-950/50"
-        />
-        <StatCard
-          title="Gross Payroll"
-          value={`$${totalGross.toLocaleString()}`}
-          subtitle="Before deductions"
-          icon={CreditCard}
-          iconColor="text-indigo-600"
-          iconBg="bg-indigo-50 dark:bg-indigo-950/50"
-        />
-        <StatCard
-          title="Taxes & PF Withheld"
-          value={`$${totalTaxes.toLocaleString()}`}
-          subtitle="Remitted to authorities"
-          icon={FileText}
-          iconColor="text-blue-600"
-          iconBg="bg-blue-50 dark:bg-blue-950/50"
-        />
-        <StatCard
-          title="Pending Approvals"
-          value={stats.payrollProcessing}
-          change={stats.payrollProcessing > 0 ? "Requires admin signoff" : "All cleared"}
-          trend={stats.payrollProcessing > 0 ? "neutral" : "up"}
-          icon={Clock}
-          iconColor="text-amber-600"
-          iconBg="bg-amber-50 dark:bg-amber-950/50"
-        />
-      </div>
+      {isManager ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <StatCard
+            title="Total Net Payout"
+            value={`$${totalDisbursed.toLocaleString()}`}
+            change="August 2026 cycle"
+            trend="up"
+            icon={DollarSign}
+            iconColor="text-emerald-600"
+            iconBg="bg-emerald-50 dark:bg-emerald-950/50"
+          />
+          <StatCard
+            title="Gross Payroll"
+            value={`$${totalGross.toLocaleString()}`}
+            subtitle="Before deductions"
+            icon={CreditCard}
+            iconColor="text-indigo-600"
+            iconBg="bg-indigo-50 dark:bg-indigo-950/50"
+          />
+          <StatCard
+            title="Taxes & PF Withheld"
+            value={`$${totalTaxes.toLocaleString()}`}
+            subtitle="Remitted to authorities"
+            icon={FileText}
+            iconColor="text-blue-600"
+            iconBg="bg-blue-50 dark:bg-blue-950/50"
+          />
+          <StatCard
+            title="Pending Approvals"
+            value={stats.payrollProcessing}
+            change={stats.payrollProcessing > 0 ? "Requires admin signoff" : "All cleared"}
+            trend={stats.payrollProcessing > 0 ? "neutral" : "up"}
+            icon={Clock}
+            iconColor="text-amber-600"
+            iconBg="bg-amber-50 dark:bg-amber-950/50"
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <StatCard
+            title="Last Net Salary"
+            value={`$${filteredRecords[0]?.netSalary.toLocaleString() || '9,600'}`}
+            subtitle="Deposited on 1st of month"
+            icon={DollarSign}
+            iconColor="text-emerald-600"
+            iconBg="bg-emerald-50 dark:bg-emerald-950/50"
+          />
+          <StatCard
+            title="Monthly Basic Pay"
+            value={`$${filteredRecords[0]?.basicSalary.toLocaleString() || '8,500'}`}
+            subtitle="Base contract rate"
+            icon={CreditCard}
+            iconColor="text-indigo-600"
+            iconBg="bg-indigo-50 dark:bg-indigo-950/50"
+          />
+          <StatCard
+            title="Tax & Benefits Withheld"
+            value={`$${((filteredRecords[0]?.taxDeduction || 1400) + (filteredRecords[0]?.providentFund || 650)).toLocaleString()}`}
+            subtitle="Provident Fund & Income Tax"
+            icon={FileText}
+            iconColor="text-blue-600"
+            iconBg="bg-blue-50 dark:bg-blue-950/50"
+          />
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 p-4 shadow-soft flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -118,7 +161,7 @@ export const Payroll: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search payroll by employee name or ID..."
+            placeholder={isManager ? "Search payroll by employee name or ID..." : "Filter your salary periods..."}
             className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
           />
         </div>
@@ -143,7 +186,7 @@ export const Payroll: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
               <tr>
-                <th className="px-6 py-4">Employee</th>
+                <th className="px-6 py-4">{isManager ? 'Employee' : 'Pay Period'}</th>
                 <th className="px-6 py-4">Basic Pay</th>
                 <th className="px-6 py-4">Allowances & Bonus</th>
                 <th className="px-6 py-4">Gross Total</th>
@@ -157,13 +200,20 @@ export const Payroll: React.FC = () => {
               {filteredRecords.map((pay) => (
                 <tr key={pay.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 transition">
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <img src={pay.employeeAvatar} alt={pay.employeeName} className="w-9 h-9 rounded-full object-cover" />
-                      <div>
-                        <div className="font-bold text-slate-900 dark:text-white">{pay.employeeName}</div>
-                        <div className="text-[11px] text-slate-400">{pay.designation}</div>
+                    {isManager ? (
+                      <div className="flex items-center gap-3">
+                        <img src={pay.employeeAvatar} alt={pay.employeeName} className="w-9 h-9 rounded-full object-cover" />
+                        <div>
+                          <div className="font-bold text-slate-900 dark:text-white">{pay.employeeName}</div>
+                          <div className="text-[11px] text-slate-400">{pay.designation}</div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="font-bold text-slate-900 dark:text-white">
+                        {pay.payPeriod}
+                        <div className="text-[11px] font-normal text-slate-400">Disbursed on {pay.paymentDate}</div>
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 font-mono font-medium">${pay.basicSalary.toLocaleString()}</td>
                   <td className="px-6 py-4 font-mono font-medium text-emerald-600">
@@ -285,7 +335,7 @@ export const Payroll: React.FC = () => {
             </div>
 
             <div className="flex justify-between items-center pt-2">
-              {selectedPayslip.status !== 'Paid' && (
+              {isManager && selectedPayslip.status !== 'Paid' && (
                 <button
                   onClick={() => {
                     updatePayrollStatus(selectedPayslip.id, 'Paid');

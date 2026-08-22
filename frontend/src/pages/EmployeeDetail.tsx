@@ -30,6 +30,13 @@ export const EmployeeDetail: React.FC = () => {
 
   const employee = employees.find((e) => e.id === id || e.employeeId === id) || employees[0];
 
+  const isManager = user?.role === 'admin' || user?.role === 'hr_officer';
+  const isOwnProfile = user?.employeeId === employee?.employeeId;
+
+  // Determine available tabs for current user
+  const canViewPrivateInfo = isManager || isOwnProfile;
+  const canViewHRSettings = isManager;
+
   const [activeTab, setActiveTab] = useState<'work' | 'private' | 'hr'>('work');
   const [formData, setFormData] = useState<Employee>(employee);
   const [isSaved, setIsSaved] = useState(false);
@@ -54,8 +61,6 @@ export const EmployeeDetail: React.FC = () => {
     }
   };
 
-  const canEditHR = user?.role === 'admin' || user?.role === 'hr_officer';
-
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Top Action Bar */}
@@ -74,22 +79,26 @@ export const EmployeeDetail: React.FC = () => {
               <CheckCircle2 className="w-4 h-4" /> Saved!
             </span>
           )}
-          {canEditHR && (
+
+          {isManager && (
             <button
               onClick={handleDelete}
-              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition"
+              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition"
               title="Delete Profile"
             >
               <Trash2 className="w-4 h-4" />
             </button>
           )}
-          <button
-            onClick={handleSave}
-            className="flex items-center gap-2 px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md transition"
-          >
-            <Save className="w-4 h-4" />
-            Save Profile
-          </button>
+
+          {(isManager || isOwnProfile) && (
+            <button
+              onClick={handleSave}
+              className="flex items-center gap-2 px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md transition"
+            >
+              <Save className="w-4 h-4" />
+              Save Profile
+            </button>
+          )}
         </div>
       </div>
 
@@ -105,63 +114,67 @@ export const EmployeeDetail: React.FC = () => {
                   alt={formData.name}
                   className="w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover ring-4 ring-white dark:ring-slate-700 shadow-md"
                 />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const url = prompt('Enter image URL for avatar:', formData.avatar);
-                    if (url) setFormData({ ...formData, avatar: url });
-                  }}
-                  className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
-                >
-                  <Camera className="w-5 h-5" />
-                </button>
+                {(isManager || isOwnProfile) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = prompt('Enter image URL for avatar:', formData.avatar);
+                      if (url) setFormData({ ...formData, avatar: url });
+                    }}
+                    className="absolute inset-0 bg-black/40 rounded-2xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                  >
+                    <Camera className="w-5 h-5" />
+                  </button>
+                )}
               </div>
 
               <div className="space-y-1">
                 <div className="flex items-center gap-2.5">
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="text-xl md:text-2xl font-black text-slate-900 dark:text-white bg-transparent border-b border-transparent hover:border-slate-300 focus:border-brand-500 focus:outline-none"
-                  />
+                  <span className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">
+                    {formData.name}
+                  </span>
                   <Badge variant={formData.status === 'Active' ? 'success' : 'warning'} size="sm">
                     {formData.status}
                   </Badge>
+                  {isOwnProfile && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 font-bold border border-brand-200">
+                      Your Profile
+                    </span>
+                  )}
                 </div>
-                <input
-                  type="text"
-                  value={formData.workInfo.jobPosition}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      workInfo: { ...formData.workInfo, jobPosition: e.target.value }
-                    })
-                  }
-                  placeholder="Job Position..."
-                  className="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-brand-500 focus:outline-none block"
-                />
-                <span className="text-[11px] font-mono text-slate-400">Badge ID: {formData.hrSettings.badgeId} • Emp ID: {formData.employeeId}</span>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  {formData.workInfo.jobPosition} • {formData.workInfo.department}
+                </p>
+                <span className="text-[11px] font-mono text-slate-400">
+                  Employee ID: {formData.employeeId} {isManager && `• Badge: ${formData.hrSettings.badgeId}`}
+                </span>
               </div>
             </div>
 
             <div className="flex flex-col gap-2 w-full sm:w-auto">
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
-              >
-                <option value="Active">Status: Active</option>
-                <option value="On Leave">Status: On Leave</option>
-                <option value="Probation">Status: Probation</option>
-                <option value="Inactive">Status: Inactive</option>
-              </select>
+              {isManager ? (
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                  className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200"
+                >
+                  <option value="Active">Status: Active</option>
+                  <option value="On Leave">Status: On Leave</option>
+                  <option value="Probation">Status: Probation</option>
+                  <option value="Inactive">Status: Inactive</option>
+                </select>
+              ) : (
+                <Badge variant={formData.status === 'Active' ? 'success' : 'warning'} size="md">
+                  Status: {formData.status}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
 
         {/* Odoo Style Tab Headers */}
         <div className="flex border-b border-slate-200 dark:border-slate-700 px-6 md:px-8 bg-white dark:bg-slate-800">
+          {/* TAB 1: WORK INFO (Everyone can see) */}
           <button
             onClick={() => setActiveTab('work')}
             className={`py-4 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition ${
@@ -174,29 +187,35 @@ export const EmployeeDetail: React.FC = () => {
             Work Information
           </button>
 
-          <button
-            onClick={() => setActiveTab('private')}
-            className={`py-4 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition ${
-              activeTab === 'private'
-                ? 'border-brand-600 text-brand-600 dark:text-brand-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400'
-            }`}
-          >
-            <User className="w-4 h-4" />
-            Private Information
-          </button>
+          {/* TAB 2: PRIVATE INFO (Manager OR Own Profile) */}
+          {canViewPrivateInfo && (
+            <button
+              onClick={() => setActiveTab('private')}
+              className={`py-4 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition ${
+                activeTab === 'private'
+                  ? 'border-brand-600 text-brand-600 dark:text-brand-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              }`}
+            >
+              <User className="w-4 h-4" />
+              Private Information
+            </button>
+          )}
 
-          <button
-            onClick={() => setActiveTab('hr')}
-            className={`py-4 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition ${
-              activeTab === 'hr'
-                ? 'border-brand-600 text-brand-600 dark:text-brand-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400'
-            }`}
-          >
-            <Shield className="w-4 h-4" />
-            HR Settings
-          </button>
+          {/* TAB 3: HR SETTINGS (Manager Only) */}
+          {canViewHRSettings && (
+            <button
+              onClick={() => setActiveTab('hr')}
+              className={`py-4 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition ${
+                activeTab === 'hr'
+                  ? 'border-brand-600 text-brand-600 dark:text-brand-400'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              HR Settings
+            </button>
+          )}
         </div>
 
         {/* Tab Contents */}
@@ -213,23 +232,32 @@ export const EmployeeDetail: React.FC = () => {
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                     Department
                   </label>
-                  <select
-                    value={formData.workInfo.department}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        workInfo: { ...formData.workInfo, department: e.target.value }
-                      })
-                    }
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
-                  >
-                    <option value="Engineering">Engineering</option>
-                    <option value="Design">Design</option>
-                    <option value="Product">Product</option>
-                    <option value="Human Resources">Human Resources</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Executive">Executive</option>
-                  </select>
+                  {isManager ? (
+                    <select
+                      value={formData.workInfo.department}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          workInfo: { ...formData.workInfo, department: e.target.value }
+                        })
+                      }
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                    >
+                      <option value="Engineering">Engineering</option>
+                      <option value="Design">Design</option>
+                      <option value="Product">Product</option>
+                      <option value="Human Resources">Human Resources</option>
+                      <option value="Finance">Finance</option>
+                      <option value="Executive">Executive</option>
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      disabled
+                      value={formData.workInfo.department}
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 cursor-not-allowed"
+                    />
+                  )}
                 </div>
 
                 <div>
@@ -238,6 +266,7 @@ export const EmployeeDetail: React.FC = () => {
                   </label>
                   <input
                     type="text"
+                    disabled={!isManager}
                     value={formData.workInfo.workLocation}
                     onChange={(e) =>
                       setFormData({
@@ -245,7 +274,9 @@ export const EmployeeDetail: React.FC = () => {
                         workInfo: { ...formData.workInfo, workLocation: e.target.value }
                       })
                     }
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                    className={`w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 ${
+                      isManager ? 'bg-slate-50 dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-900 cursor-not-allowed text-slate-600'
+                    } text-slate-900 dark:text-white`}
                   />
                 </div>
 
@@ -255,6 +286,7 @@ export const EmployeeDetail: React.FC = () => {
                   </label>
                   <input
                     type="text"
+                    disabled={!isManager}
                     value={formData.workInfo.workAddress}
                     onChange={(e) =>
                       setFormData({
@@ -262,7 +294,9 @@ export const EmployeeDetail: React.FC = () => {
                         workInfo: { ...formData.workInfo, workAddress: e.target.value }
                       })
                     }
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                    className={`w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 ${
+                      isManager ? 'bg-slate-50 dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-900 cursor-not-allowed text-slate-600'
+                    } text-slate-900 dark:text-white`}
                   />
                 </div>
               </div>
@@ -278,6 +312,7 @@ export const EmployeeDetail: React.FC = () => {
                   </label>
                   <input
                     type="text"
+                    disabled={!isManager}
                     value={formData.workInfo.manager}
                     onChange={(e) =>
                       setFormData({
@@ -285,7 +320,9 @@ export const EmployeeDetail: React.FC = () => {
                         workInfo: { ...formData.workInfo, manager: e.target.value }
                       })
                     }
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                    className={`w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 ${
+                      isManager ? 'bg-slate-50 dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-900 cursor-not-allowed text-slate-600'
+                    } text-slate-900 dark:text-white`}
                   />
                 </div>
 
@@ -295,6 +332,7 @@ export const EmployeeDetail: React.FC = () => {
                   </label>
                   <input
                     type="text"
+                    disabled={!isManager}
                     value={formData.workInfo.workSchedule}
                     onChange={(e) =>
                       setFormData({
@@ -302,7 +340,9 @@ export const EmployeeDetail: React.FC = () => {
                         workInfo: { ...formData.workInfo, workSchedule: e.target.value }
                       })
                     }
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                    className={`w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 ${
+                      isManager ? 'bg-slate-50 dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-900 cursor-not-allowed text-slate-600'
+                    } text-slate-900 dark:text-white`}
                   />
                 </div>
 
@@ -312,6 +352,7 @@ export const EmployeeDetail: React.FC = () => {
                   </label>
                   <input
                     type="date"
+                    disabled={!isManager}
                     value={formData.workInfo.joinDate}
                     onChange={(e) =>
                       setFormData({
@@ -319,15 +360,17 @@ export const EmployeeDetail: React.FC = () => {
                         workInfo: { ...formData.workInfo, joinDate: e.target.value }
                       })
                     }
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                    className={`w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 ${
+                      isManager ? 'bg-slate-50 dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-900 cursor-not-allowed text-slate-600'
+                    } text-slate-900 dark:text-white`}
                   />
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 2: PRIVATE INFORMATION */}
-          {activeTab === 'private' && (
+          {/* TAB 2: PRIVATE INFORMATION (Visible to Manager or Own Profile) */}
+          {activeTab === 'private' && canViewPrivateInfo && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in">
               <div className="space-y-4">
                 <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b pb-2">
@@ -374,6 +417,7 @@ export const EmployeeDetail: React.FC = () => {
                   </label>
                   <input
                     type="text"
+                    disabled={!isManager}
                     value={formData.privateInfo.identificationNumber}
                     onChange={(e) =>
                       setFormData({
@@ -381,7 +425,9 @@ export const EmployeeDetail: React.FC = () => {
                         privateInfo: { ...formData.privateInfo, identificationNumber: e.target.value }
                       })
                     }
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                    className={`w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 ${
+                      isManager ? 'bg-slate-50 dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-900 cursor-not-allowed'
+                    } text-slate-900 dark:text-white`}
                   />
                 </div>
 
@@ -479,8 +525,8 @@ export const EmployeeDetail: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 3: HR SETTINGS */}
-          {activeTab === 'hr' && (
+          {/* TAB 3: HR SETTINGS (Manager Only) */}
+          {activeTab === 'hr' && canViewHRSettings && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in">
               <div className="space-y-4">
                 <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 border-b pb-2">
@@ -506,7 +552,7 @@ export const EmployeeDetail: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Kiosk PIN Code (for quick attendance clock)
+                    Kiosk PIN Code (for attendance clock)
                   </label>
                   <input
                     type="text"
@@ -532,7 +578,6 @@ export const EmployeeDetail: React.FC = () => {
                     System Access Level
                   </label>
                   <select
-                    disabled={!canEditHR}
                     value={formData.hrSettings.role}
                     onChange={(e) =>
                       setFormData({
@@ -543,8 +588,8 @@ export const EmployeeDetail: React.FC = () => {
                     className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
                   >
                     <option value="employee">Employee (Self Service)</option>
-                    <option value="hr_officer">HR Officer (Workforce & Leave Manager)</option>
-                    <option value="admin">Administrator (Full Access)</option>
+                    <option value="hr_officer">HR Officer (Personnel & Leaves)</option>
+                    <option value="admin">Administrator (Complete Access)</option>
                   </select>
                 </div>
 
@@ -553,7 +598,6 @@ export const EmployeeDetail: React.FC = () => {
                     Annual Gross Base Salary ($ USD)
                   </label>
                   <input
-                    disabled={!canEditHR}
                     type="number"
                     value={formData.hrSettings.salary}
                     onChange={(e) =>

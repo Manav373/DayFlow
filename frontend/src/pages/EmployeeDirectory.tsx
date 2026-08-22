@@ -2,16 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Search,
-  Filter,
   Grid,
   List,
   Mail,
-  Phone,
   MapPin,
   UserPlus,
   Briefcase,
   ExternalLink,
-  Shield
+  Shield,
+  KeyRound
 } from 'lucide-react';
 import { useHRMS } from '../context/HRMSContext';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +22,8 @@ export const EmployeeDirectory: React.FC = () => {
   const navigate = useNavigate();
   const { employees, addEmployee } = useHRMS();
   const { user } = useAuth();
+
+  const isManager = user?.role === 'admin' || user?.role === 'hr_officer';
 
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -93,19 +94,24 @@ export const EmployeeDirectory: React.FC = () => {
             Employee Directory
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Odoo-style master employee cards & comprehensive profile records
+            {isManager
+              ? 'Odoo-style master employee cards & comprehensive profile records'
+              : 'Browse corporate directory and team members'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md transition"
-          >
-            <UserPlus className="w-4 h-4" />
-            Add New Employee
-          </button>
-        </div>
+        {/* Manager Only: Add New Employee Button */}
+        {isManager && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md transition"
+            >
+              <UserPlus className="w-4 h-4" />
+              Add New Employee
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filter and Search Bar */}
@@ -173,63 +179,81 @@ export const EmployeeDirectory: React.FC = () => {
       {/* Grid View */}
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEmployees.map((emp) => (
-            <div
-              key={emp.id}
-              onClick={() => navigate(`/employee/${emp.id}`)}
-              className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-soft hover:shadow-elevated hover:border-brand-300 dark:hover:border-brand-600 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3.5">
-                    <img
-                      src={emp.avatar}
-                      alt={emp.name}
-                      className="w-14 h-14 rounded-2xl object-cover ring-2 ring-slate-100 dark:ring-slate-700 group-hover:scale-105 transition"
-                    />
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-brand-600 transition">
-                        {emp.name}
-                      </h3>
-                      <p className="text-xs text-slate-500 font-medium">{emp.workInfo.jobPosition}</p>
-                      <span className="text-[10px] text-slate-400 font-mono">{emp.employeeId}</span>
+          {filteredEmployees.map((emp) => {
+            const isOwnProfile = user?.employeeId === emp.employeeId;
+
+            return (
+              <div
+                key={emp.id}
+                onClick={() => navigate(`/employee/${emp.id}`)}
+                className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-soft hover:shadow-elevated hover:border-brand-300 dark:hover:border-brand-600 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3.5">
+                      <img
+                        src={emp.avatar}
+                        alt={emp.name}
+                        className="w-14 h-14 rounded-2xl object-cover ring-2 ring-slate-100 dark:ring-slate-700 group-hover:scale-105 transition"
+                      />
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-brand-600 transition">
+                            {emp.name}
+                          </h3>
+                          {isOwnProfile && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-brand-50 text-brand-700 font-bold">
+                              You
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 font-medium">{emp.workInfo.jobPosition}</p>
+                        <span className="text-[10px] text-slate-400 font-mono">{emp.employeeId}</span>
+                      </div>
+                    </div>
+
+                    <Badge
+                      variant={emp.status === 'Active' ? 'success' : emp.status === 'On Leave' ? 'info' : 'warning'}
+                      size="sm"
+                    >
+                      {emp.status}
+                    </Badge>
+                  </div>
+
+                  <div className="mt-5 space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{emp.workInfo.department} • Reports to {emp.workInfo.manager}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="truncate">{emp.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="truncate">{emp.workInfo.workLocation}</span>
                     </div>
                   </div>
-
-                  <Badge
-                    variant={emp.status === 'Active' ? 'success' : emp.status === 'On Leave' ? 'info' : 'warning'}
-                    size="sm"
-                  >
-                    {emp.status}
-                  </Badge>
                 </div>
 
-                <div className="mt-5 space-y-2 text-xs text-slate-600 dark:text-slate-300">
-                  <div className="flex items-center gap-2">
-                    <Briefcase className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{emp.workInfo.department} • Reports to {emp.workInfo.manager}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="truncate">{emp.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="truncate">{emp.workInfo.workLocation}</span>
-                  </div>
+                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-between">
+                  {/* Sensitive PIN is ONLY visible to Admin/HR or the user on their own card */}
+                  {isManager || isOwnProfile ? (
+                    <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                      <KeyRound className="w-3 h-3 text-slate-400" /> PIN: {emp.hrSettings.pinCode}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-slate-400">
+                      {emp.workInfo.workSchedule.split(' ')[0]} Schedule
+                    </span>
+                  )}
+                  <span className="text-xs font-bold text-brand-600 dark:text-brand-400 flex items-center gap-1 group-hover:underline">
+                    {isOwnProfile || isManager ? 'Odoo Profile' : 'View Profile'} <ExternalLink className="w-3.5 h-3.5" />
+                  </span>
                 </div>
               </div>
-
-              <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-slate-400">
-                  PIN: {emp.hrSettings.pinCode}
-                </span>
-                <span className="text-xs font-bold text-brand-600 dark:text-brand-400 flex items-center gap-1 group-hover:underline">
-                  Odoo Profile <ExternalLink className="w-3.5 h-3.5" />
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         /* Table View */
@@ -294,88 +318,90 @@ export const EmployeeDirectory: React.FC = () => {
         </div>
       )}
 
-      {/* Add Employee Modal */}
-      <Modal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title="Add New Employee (Odoo Record)"
-        subtitle="Initialize new employment file with work information"
-        maxWidth="2xl"
-      >
-        <form onSubmit={handleAddSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Full Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={newEmpForm.name}
-                onChange={(e) => setNewEmpForm({ ...newEmpForm, name: e.target.value })}
-                placeholder="e.g. Cameron Diaz"
-                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
-              />
+      {/* Add Employee Modal (Admin / HR only) */}
+      {isManager && (
+        <Modal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          title="Add New Employee (Odoo Record)"
+          subtitle="Initialize new employment file with work information"
+          maxWidth="2xl"
+        >
+          <form onSubmit={handleAddSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newEmpForm.name}
+                  onChange={(e) => setNewEmpForm({ ...newEmpForm, name: e.target.value })}
+                  placeholder="e.g. Cameron Diaz"
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={newEmpForm.email}
+                  onChange={(e) => setNewEmpForm({ ...newEmpForm, email: e.target.value })}
+                  placeholder="cameron.d@dayflow.io"
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Job Position
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newEmpForm.designation}
+                  onChange={(e) => setNewEmpForm({ ...newEmpForm, designation: e.target.value, role: e.target.value })}
+                  placeholder="e.g. UX Researcher"
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Department
+                </label>
+                <select
+                  value={newEmpForm.department}
+                  onChange={(e) => setNewEmpForm({ ...newEmpForm, department: e.target.value })}
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                >
+                  {departments.filter(d => d !== 'All').map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Email Address *
-              </label>
-              <input
-                type="email"
-                required
-                value={newEmpForm.email}
-                onChange={(e) => setNewEmpForm({ ...newEmpForm, email: e.target.value })}
-                placeholder="cameron.d@dayflow.io"
-                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Job Position
-              </label>
-              <input
-                type="text"
-                required
-                value={newEmpForm.designation}
-                onChange={(e) => setNewEmpForm({ ...newEmpForm, designation: e.target.value, role: e.target.value })}
-                placeholder="e.g. UX Researcher"
-                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Department
-              </label>
-              <select
-                value={newEmpForm.department}
-                onChange={(e) => setNewEmpForm({ ...newEmpForm, department: e.target.value })}
-                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
-              >
-                {departments.filter(d => d !== 'All').map(d => (
-                  <option key={d} value={d}>{d}</option>
-                ))}
-              </select>
-            </div>
-          </div>
 
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setIsAddModalOpen(false)}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 rounded-xl"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-md transition"
-            >
-              Save and Edit Full Tabs →
-            </button>
-          </div>
-        </form>
-      </Modal>
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-md transition"
+              >
+                Save and Edit Full Tabs →
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };

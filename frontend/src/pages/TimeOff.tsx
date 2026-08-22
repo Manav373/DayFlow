@@ -6,11 +6,11 @@ import {
   Clock,
   Plus,
   Search,
-  Filter,
   Calendar as CalendarIcon,
   List
 } from 'lucide-react';
 import { useHRMS } from '../context/HRMSContext';
+import { useAuth } from '../context/AuthContext';
 import { LeaveStatus, LeaveType } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
@@ -22,8 +22,13 @@ export const TimeOff: React.FC = () => {
     leaveRequests,
     submitLeaveRequest,
     updateLeaveStatus,
-    stats
+    stats,
+    employees
   } = useHRMS();
+
+  const { user } = useAuth();
+  const isManager = user?.role === 'admin' || user?.role === 'hr_officer';
+  const currentEmp = employees.find(e => e.employeeId === user?.employeeId) || employees[0];
 
   const [viewMode, setViewMode] = useState<'calendar' | 'table'>('calendar');
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,7 +43,11 @@ export const TimeOff: React.FC = () => {
     reason: ''
   });
 
-  const filteredRequests = leaveRequests.filter((req) => {
+  const requestsToDisplay = isManager
+    ? leaveRequests
+    : leaveRequests.filter((r) => r.employeeId === user?.employeeId || r.employeeName === user?.name);
+
+  const filteredRequests = requestsToDisplay.filter((req) => {
     const matchesSearch =
       req.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       req.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -103,10 +112,12 @@ export const TimeOff: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Time Off & Leave Management
+            {isManager ? 'Time Off & Leave Management' : 'My Time Off & Team Calendar'}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Odoo-style team calendar view & leave approval requests
+            {isManager
+              ? 'Odoo-style team calendar view & managerial leave approval queue'
+              : 'Submit vacation requests, view your leave quota, and check team availability'}
           </p>
         </div>
 
@@ -133,7 +144,7 @@ export const TimeOff: React.FC = () => {
               }`}
             >
               <List className="w-3.5 h-3.5" />
-              Requests Table
+              {isManager ? 'Approval Table' : 'My Requests'}
             </button>
           </div>
 
@@ -148,42 +159,71 @@ export const TimeOff: React.FC = () => {
       </div>
 
       {/* KPI Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard
-          title="Pending Requests"
-          value={stats.pendingLeaves}
-          change={stats.pendingLeaves > 0 ? 'Review queue active' : 'All cleared'}
-          trend={stats.pendingLeaves > 0 ? 'neutral' : 'up'}
-          icon={Clock}
-          iconColor="text-amber-600"
-          iconBg="bg-amber-50 dark:bg-amber-950/50"
-        />
-        <StatCard
-          title="Approved Leaves"
-          value={leaveRequests.filter(l => l.status === 'Approved').length}
-          change="This calendar month"
-          trend="up"
-          icon={CheckCircle2}
-          iconColor="text-emerald-600"
-          iconBg="bg-emerald-50 dark:bg-emerald-950/50"
-        />
-        <StatCard
-          title="Currently On Leave"
-          value={stats.onLeaveToday}
-          subtitle="Team members absent"
-          icon={CalendarOff}
-          iconColor="text-blue-600"
-          iconBg="bg-blue-50 dark:bg-blue-950/50"
-        />
-        <StatCard
-          title="Rejected Requests"
-          value={leaveRequests.filter(l => l.status === 'Rejected').length}
-          subtitle="Policy mismatches"
-          icon={XCircle}
-          iconColor="text-rose-600"
-          iconBg="bg-rose-50 dark:bg-rose-950/50"
-        />
-      </div>
+      {isManager ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <StatCard
+            title="Pending Requests"
+            value={stats.pendingLeaves}
+            change={stats.pendingLeaves > 0 ? 'Review queue active' : 'All cleared'}
+            trend={stats.pendingLeaves > 0 ? 'neutral' : 'up'}
+            icon={Clock}
+            iconColor="text-amber-600"
+            iconBg="bg-amber-50 dark:bg-amber-950/50"
+          />
+          <StatCard
+            title="Approved Leaves"
+            value={leaveRequests.filter(l => l.status === 'Approved').length}
+            change="This calendar month"
+            trend="up"
+            icon={CheckCircle2}
+            iconColor="text-emerald-600"
+            iconBg="bg-emerald-50 dark:bg-emerald-950/50"
+          />
+          <StatCard
+            title="Currently On Leave"
+            value={stats.onLeaveToday}
+            subtitle="Team members absent"
+            icon={CalendarOff}
+            iconColor="text-blue-600"
+            iconBg="bg-blue-50 dark:bg-blue-950/50"
+          />
+          <StatCard
+            title="Rejected Requests"
+            value={leaveRequests.filter(l => l.status === 'Rejected').length}
+            subtitle="Policy mismatches"
+            icon={XCircle}
+            iconColor="text-rose-600"
+            iconBg="bg-rose-50 dark:bg-rose-950/50"
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <StatCard
+            title="Annual PTO Remaining"
+            value={`${currentEmp.leaveBalance.annual - currentEmp.leaveBalance.annualUsed} / ${currentEmp.leaveBalance.annual}`}
+            subtitle="Days available in 2026"
+            icon={CheckCircle2}
+            iconColor="text-indigo-600"
+            iconBg="bg-indigo-50 dark:bg-indigo-950/50"
+          />
+          <StatCard
+            title="Sick Leave Available"
+            value={`${currentEmp.leaveBalance.sick - currentEmp.leaveBalance.sickUsed} / ${currentEmp.leaveBalance.sick}`}
+            subtitle="Fully paid medical quota"
+            icon={CalendarOff}
+            iconColor="text-emerald-600"
+            iconBg="bg-emerald-50 dark:bg-emerald-950/50"
+          />
+          <StatCard
+            title="Casual Leave Available"
+            value={`${currentEmp.leaveBalance.casual - currentEmp.leaveBalance.casualUsed} / ${currentEmp.leaveBalance.casual}`}
+            subtitle="Personal days remaining"
+            icon={Clock}
+            iconColor="text-amber-600"
+            iconBg="bg-amber-50 dark:bg-amber-950/50"
+          />
+        </div>
+      )}
 
       {/* View Switcher Output */}
       {viewMode === 'calendar' ? (
@@ -201,7 +241,7 @@ export const TimeOff: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by employee, department, or reason..."
+                placeholder="Search by reason or department..."
                 className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
               />
             </div>
@@ -244,7 +284,7 @@ export const TimeOff: React.FC = () => {
                     <th className="px-6 py-4">Duration</th>
                     <th className="px-6 py-4">Reason</th>
                     <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-right">Approval Actions</th>
+                    {isManager && <th className="px-6 py-4 text-right">Approval Actions</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
@@ -272,28 +312,30 @@ export const TimeOff: React.FC = () => {
                       <td className="px-6 py-4">
                         {getStatusBadge(req.status)}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        {req.status === 'Pending' ? (
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => updateLeaveStatus(req.id, 'Approved')}
-                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-xs transition"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => updateLeaveStatus(req.id, 'Rejected')}
-                              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-rose-50 hover:text-rose-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl transition"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-[11px] text-slate-400 font-medium">
-                            Reviewed {req.reviewDate ? `on ${req.reviewDate}` : ''}
-                          </span>
-                        )}
-                      </td>
+                      {isManager && (
+                        <td className="px-6 py-4 text-right">
+                          {req.status === 'Pending' ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => updateLeaveStatus(req.id, 'Approved')}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-xs transition"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => updateLeaveStatus(req.id, 'Rejected')}
+                                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-rose-50 hover:text-rose-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl transition"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 font-medium">
+                              Reviewed {req.reviewDate ? `on ${req.reviewDate}` : ''}
+                            </span>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>

@@ -9,6 +9,7 @@ import {
   KeyRound
 } from 'lucide-react';
 import { useHRMS } from '../context/HRMSContext';
+import { useAuth } from '../context/AuthContext';
 import { AttendanceStatus } from '../types';
 import { Badge } from '../components/common/Badge';
 import { StatCard } from '../components/common/StatCard';
@@ -16,13 +17,21 @@ import { KioskModal } from '../components/kiosk/KioskModal';
 
 export const Attendance: React.FC = () => {
   const { attendanceRecords, stats } = useHRMS();
+  const { user } = useAuth();
+
+  const isManager = user?.role === 'admin' || user?.role === 'hr_officer';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [showKiosk, setShowKiosk] = useState(false);
 
-  const filteredRecords = attendanceRecords.filter((rec) => {
+  // If employee, filter strictly to their own attendance records
+  const recordsToDisplay = isManager
+    ? attendanceRecords
+    : attendanceRecords.filter((r) => r.employeeId === user?.employeeId || r.employeeName === user?.name);
+
+  const filteredRecords = recordsToDisplay.filter((rec) => {
     const matchesSearch =
       rec.employeeName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       rec.employeeId.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -71,10 +80,12 @@ export const Attendance: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Attendance & Timesheets
+            {isManager ? 'Attendance & Timesheets' : 'My Attendance & Punch Logs'}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Monitor daily check-ins, biometric kiosk logs, and workforce punctuality
+            {isManager
+              ? 'Monitor daily check-ins, biometric kiosk logs, and workforce punctuality'
+              : 'Track your daily shift check-ins, logged hours, and attendance punctuality'}
           </p>
         </div>
 
@@ -86,57 +97,90 @@ export const Attendance: React.FC = () => {
             <KeyRound className="w-4 h-4" />
             Open Office Kiosk
           </button>
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 shadow-xs transition"
-          >
-            <Download className="w-4 h-4" />
-            Export CSV
-          </button>
+          {isManager && (
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 shadow-xs transition"
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </button>
+          )}
         </div>
       </div>
 
       {/* KPI Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <StatCard
-          title="Present Today"
-          value={stats.presentToday}
-          change={`${stats.attendanceRate}% on time`}
-          trend="up"
-          subtitle="9:00 AM standard threshold"
-          icon={CheckCircle}
-          iconColor="text-emerald-600"
-          iconBg="bg-emerald-50 dark:bg-emerald-950/50"
-        />
-        <StatCard
-          title="Late Arrivals"
-          value={attendanceRecords.filter(r => r.status === 'Late').length}
-          change="Logged after 9:15 AM"
-          trend="neutral"
-          icon={AlertTriangle}
-          iconColor="text-amber-600"
-          iconBg="bg-amber-50 dark:bg-amber-950/50"
-        />
-        <StatCard
-          title="On Scheduled Leave"
-          value={stats.onLeaveToday}
-          change="Approved leaves"
-          trend="neutral"
-          icon={Clock}
-          iconColor="text-blue-600"
-          iconBg="bg-blue-50 dark:bg-blue-950/50"
-        />
-        <StatCard
-          title="Unplanned Absent"
-          value={0}
-          change="0.0% attrition today"
-          trend="up"
-          subtitle="All accounted for"
-          icon={UserX}
-          iconColor="text-rose-600"
-          iconBg="bg-rose-50 dark:bg-rose-950/50"
-        />
-      </div>
+      {isManager ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <StatCard
+            title="Present Today"
+            value={stats.presentToday}
+            change={`${stats.attendanceRate}% on time`}
+            trend="up"
+            subtitle="9:00 AM standard threshold"
+            icon={CheckCircle}
+            iconColor="text-emerald-600"
+            iconBg="bg-emerald-50 dark:bg-emerald-950/50"
+          />
+          <StatCard
+            title="Late Arrivals"
+            value={attendanceRecords.filter(r => r.status === 'Late').length}
+            change="Logged after 9:15 AM"
+            trend="neutral"
+            icon={AlertTriangle}
+            iconColor="text-amber-600"
+            iconBg="bg-amber-50 dark:bg-amber-950/50"
+          />
+          <StatCard
+            title="On Scheduled Leave"
+            value={stats.onLeaveToday}
+            change="Approved leaves"
+            trend="neutral"
+            icon={Clock}
+            iconColor="text-blue-600"
+            iconBg="bg-blue-50 dark:bg-blue-950/50"
+          />
+          <StatCard
+            title="Unplanned Absent"
+            value={0}
+            change="0.0% attrition today"
+            trend="up"
+            subtitle="All accounted for"
+            icon={UserX}
+            iconColor="text-rose-600"
+            iconBg="bg-rose-50 dark:bg-rose-950/50"
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          <StatCard
+            title="My Attendance Rate"
+            value="100%"
+            change="Zero missed shifts this month"
+            trend="up"
+            icon={CheckCircle}
+            iconColor="text-emerald-600"
+            iconBg="bg-emerald-50 dark:bg-emerald-950/50"
+          />
+          <StatCard
+            title="Logged Work Hours"
+            value="168 hrs"
+            change="Standard 40h weekly schedule"
+            trend="up"
+            icon={Clock}
+            iconColor="text-brand-600"
+            iconBg="bg-brand-50 dark:bg-brand-950/50"
+          />
+          <StatCard
+            title="Punctuality Score"
+            value="98.5%"
+            subtitle="Arrivals on or before 9:00 AM"
+            icon={AlertTriangle}
+            iconColor="text-blue-600"
+            iconBg="bg-blue-50 dark:bg-blue-950/50"
+          />
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 p-4 shadow-soft flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -146,7 +190,7 @@ export const Attendance: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filter by employee name, ID, or department..."
+            placeholder={isManager ? "Filter by employee name, ID, or department..." : "Search past shift logs..."}
             className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
           />
         </div>
