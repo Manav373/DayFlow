@@ -10,8 +10,8 @@ import {
   BarChart3,
   Settings,
   Sparkles,
-  Shield,
-  User
+  User,
+  FileText
 } from 'lucide-react';
 import { useHRMS } from '../../context/HRMSContext';
 import { useAuth } from '../../context/AuthContext';
@@ -22,37 +22,39 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
-  const { stats } = useHRMS();
-  const { user, quickLoginAs } = useAuth();
+  const { stats, employees } = useHRMS();
+  const { user } = useAuth();
 
-  const navItems = [
+  const currentEmp = employees.find(e => e.employeeId === user?.employeeId) || employees[0];
+  const isEmployee = user?.role === 'employee';
+
+  const adminNavItems = [
     {
       to: '/',
       label: 'Admin Overview',
       icon: LayoutDashboard,
       badge: null,
-      adminOnly: false,
     },
     {
       to: '/employee-portal',
       label: 'Self Service',
       icon: UserCheck,
       badge: 'Live',
-      adminOnly: false,
+      badgeColor: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
     },
     {
       to: '/directory',
       label: 'Directory',
       icon: Users,
       badge: `${stats.totalEmployees}`,
-      adminOnly: false,
+      badgeColor: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
     },
     {
       to: '/attendance',
       label: 'Attendance',
       icon: Clock,
       badge: `${stats.presentToday} Logged`,
-      adminOnly: false,
+      badgeColor: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
     },
     {
       to: '/time-off',
@@ -60,7 +62,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
       icon: CalendarOff,
       badge: stats.pendingLeaves > 0 ? `${stats.pendingLeaves} Req` : null,
       badgeColor: 'bg-amber-500 text-white',
-      adminOnly: false,
     },
     {
       to: '/payroll',
@@ -68,23 +69,66 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
       icon: CreditCard,
       badge: stats.payrollProcessing > 0 ? 'Pending' : null,
       badgeColor: 'bg-indigo-500 text-white',
-      adminOnly: false,
     },
     {
       to: '/reports',
       label: 'Analytics',
       icon: BarChart3,
       badge: null,
-      adminOnly: false,
     },
     {
       to: '/settings',
       label: 'Settings',
       icon: Settings,
       badge: null,
-      adminOnly: false,
     },
   ];
+
+  const employeeNavItems = [
+    {
+      to: '/employee-portal',
+      label: 'My Portal',
+      icon: UserCheck,
+      badge: 'Live',
+      badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
+    },
+    {
+      to: '/directory',
+      label: 'Directory',
+      icon: Users,
+      badge: `${stats.totalEmployees}`,
+      badgeColor: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    },
+    {
+      to: '/attendance',
+      label: 'My Attendance',
+      icon: Clock,
+      badge: 'Punch Log',
+      badgeColor: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    },
+    {
+      to: '/time-off',
+      label: 'Time Off & Leaves',
+      icon: CalendarOff,
+      badge: stats.pendingLeaves > 0 ? `${stats.pendingLeaves} Req` : null,
+      badgeColor: 'bg-amber-500 text-white',
+    },
+    {
+      to: '/payroll',
+      label: 'My Payslips',
+      icon: FileText,
+      badge: null,
+    },
+    {
+      to: `/employee/${currentEmp?.id || 'emp-1'}`,
+      label: 'My Profile',
+      icon: User,
+      badge: 'Odoo Tabs',
+      badgeColor: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
+    },
+  ];
+
+  const currentNavItems = isEmployee ? employeeNavItems : adminNavItems;
 
   return (
     <aside
@@ -94,8 +138,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
     >
       {/* Brand Header */}
       <div className="h-16 flex items-center justify-between px-5 border-b border-slate-100 dark:border-slate-800">
-        <NavLink to="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20 group-hover:scale-105 transition">
+        <NavLink to={isEmployee ? '/employee-portal' : '/'} className="flex items-center gap-3 group">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20 group-hover:scale-105 transition">
             <Sparkles className="w-5 h-5" />
           </div>
           {!isCollapsed && (
@@ -104,63 +148,33 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
                 DAYFLOW
               </span>
               <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 -mt-1">
-                Unified HRMS
+                UNIFIED HRMS
               </span>
             </div>
           )}
         </NavLink>
       </div>
 
-      {/* Role Pill Switcher */}
-      {!isCollapsed && (
-        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-          <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center gap-1">
-            <button
-              onClick={() => quickLoginAs('admin')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-semibold rounded-lg transition-all ${
-                user?.role === 'admin'
-                  ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-300 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
-              }`}
-            >
-              <Shield className="w-3.5 h-3.5" />
-              Admin
-            </button>
-            <button
-              onClick={() => quickLoginAs('employee')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 text-xs font-semibold rounded-lg transition-all ${
-                user?.role === 'employee'
-                  ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-300 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
-              }`}
-            >
-              <User className="w-3.5 h-3.5" />
-              Employee
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Navigation Links */}
       <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         <div className="px-3 pb-2">
           {!isCollapsed && (
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Workspace Menu
             </span>
           )}
         </div>
 
-        {navItems.map((item) => {
+        {currentNavItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
+                `flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm font-semibold transition-all group ${
                   isActive
-                    ? 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-300 font-semibold shadow-xs'
+                    ? 'bg-indigo-50/90 text-brand-600 dark:bg-brand-950/60 dark:text-brand-300 shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
                 }`
               }
@@ -185,20 +199,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
         })}
       </div>
 
-      {/* Footer / System Status */}
+      {/* Footer / User Authentication Status */}
       {!isCollapsed && (
         <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-          <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-2xl p-3.5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-indigo-200">Dayflow Enterprise</span>
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
+          <div className="bg-slate-50 dark:bg-slate-800/80 rounded-2xl p-3 border border-slate-200/80 dark:border-slate-700/60">
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <img
+                  src={user?.avatar || currentEmp.avatar}
+                  alt={user?.name || currentEmp.name}
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-brand-500/20"
+                />
+                <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-500 ring-1 ring-white dark:ring-slate-900"></span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                  {user?.name || currentEmp.name}
+                </p>
+                <p className="text-[10px] text-slate-400 capitalize">
+                  {user?.role === 'admin' ? 'Administrator' : user?.role === 'hr_officer' ? 'HR Officer' : 'Employee'}
+                </p>
+              </div>
             </div>
-            <p className="text-[11px] text-slate-300 mt-1 leading-snug">
-              Connected to REST API backend.
-            </p>
           </div>
         </div>
       )}
