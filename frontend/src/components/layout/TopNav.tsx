@@ -13,11 +13,14 @@ import {
   ChevronDown,
   KeyRound,
   LogOut,
-  User
+  User,
+  ShieldCheck,
+  Lock
 } from 'lucide-react';
 import { useHRMS } from '../../context/HRMSContext';
 import { useAuth } from '../../context/AuthContext';
 import { KioskModal } from '../kiosk/KioskModal';
+import { ChangePasswordModal } from '../common/ChangePasswordModal';
 
 interface TopNavProps {
   isCollapsed: boolean;
@@ -39,6 +42,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showKiosk, setShowKiosk] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const formatTimer = (totalSeconds: number) => {
@@ -51,6 +55,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   const filteredQuickSearch = searchQuery.trim()
     ? employees.filter(e =>
         e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (e.loginId && e.loginId.toLowerCase().includes(searchQuery.toLowerCase())) ||
         e.workInfo.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
         e.workInfo.jobPosition.toLowerCase().includes(searchQuery.toLowerCase())
       )
@@ -76,8 +81,8 @@ export const TopNav: React.FC<TopNavProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search employees, departments, policies... (Ctrl+K)"
-            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 border-transparent focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition"
+            placeholder="Search employees, Login IDs, departments... (Ctrl+K)"
+            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 border-transparent focus:border-purple-500 focus:bg-white dark:focus:bg-slate-900 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition"
           />
 
           {/* Quick Search Dropdown */}
@@ -98,7 +103,12 @@ export const TopNav: React.FC<TopNavProps> = ({
                   >
                     <img src={emp.avatar} alt={emp.name} className="w-8 h-8 rounded-full object-cover" />
                     <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white">{emp.name}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900 dark:text-white">{emp.name}</span>
+                        <span className="text-[10px] font-mono text-purple-600 font-bold bg-purple-50 dark:bg-purple-950/50 px-1 rounded">
+                          {emp.loginId || 'OIJODO20220001'}
+                        </span>
+                      </div>
                       <div className="text-[11px] text-slate-500">{emp.workInfo.jobPosition} • {emp.workInfo.department}</div>
                     </div>
                   </div>
@@ -116,7 +126,7 @@ export const TopNav: React.FC<TopNavProps> = ({
         {/* Kiosk Mode Shortcut */}
         <button
           onClick={() => setShowKiosk(true)}
-          className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-indigo-50 dark:bg-indigo-950/40 text-brand-600 dark:text-brand-300 rounded-xl hover:bg-indigo-100 transition"
+          className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 rounded-xl hover:bg-purple-100 transition"
           title="Open Kiosk PIN Punch"
         >
           <KeyRound className="w-3.5 h-3.5" />
@@ -142,7 +152,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition shadow-xs ${
               isPunchedIn
                 ? 'bg-rose-500 hover:bg-rose-600 text-white'
-                : 'bg-brand-600 hover:bg-brand-700 text-white'
+                : 'bg-purple-600 hover:bg-purple-500 text-white'
             }`}
           >
             {isPunchedIn ? (
@@ -182,7 +192,7 @@ export const TopNav: React.FC<TopNavProps> = ({
             <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-4 z-50 animate-in fade-in">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
                 <span className="text-sm font-bold text-slate-900 dark:text-white">Notifications</span>
-                <span className="text-[11px] font-semibold text-brand-600 cursor-pointer">Mark all read</span>
+                <span className="text-[11px] font-semibold text-purple-600 cursor-pointer">Mark all read</span>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-slate-700/50 mt-2 max-h-64 overflow-y-auto">
                 <div className="py-2.5 flex items-start gap-3">
@@ -197,7 +207,7 @@ export const TopNav: React.FC<TopNavProps> = ({
                   </div>
                 </div>
                 <div className="py-2.5 flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 flex-shrink-0 mt-0.5">
+                  <div className="w-7 h-7 rounded-full bg-purple-100 dark:bg-purple-950 flex items-center justify-center text-purple-600 flex-shrink-0 mt-0.5">
                     <Clock className="w-4 h-4" />
                   </div>
                   <div>
@@ -221,24 +231,31 @@ export const TopNav: React.FC<TopNavProps> = ({
             <img
               src={user?.avatar || currentUser.avatar}
               alt={user?.name || currentUser.name}
-              className="w-8 h-8 rounded-full object-cover ring-2 ring-brand-500/20"
+              className="w-8 h-8 rounded-full object-cover ring-2 ring-purple-500/20"
             />
             <div className="hidden md:flex flex-col text-left">
               <span className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
                 {user?.name || currentUser.name}
               </span>
-              <span className="text-[10px] text-slate-400 capitalize">
-                {user?.role === 'admin' ? 'Administrator' : user?.role === 'hr_officer' ? 'HR Officer' : 'Employee'}
+              <span className="text-[10px] font-mono text-purple-600 dark:text-purple-400 font-semibold">
+                {user?.loginId || 'OISAJE20220001'}
               </span>
             </div>
             <ChevronDown className="w-4 h-4 text-slate-400" />
           </button>
 
           {showUserMenu && (
-            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-2.5 z-50 animate-in fade-in">
+            <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl p-2.5 z-50 animate-in fade-in">
               <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 mb-1">
                 <p className="text-xs font-bold text-slate-900 dark:text-white">{user?.name || currentUser.name}</p>
-                <p className="text-[10px] text-slate-400 truncate">{user?.email || currentUser.email}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded">
+                    {user?.loginId || 'OISAJE20220001'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold">
+                    {user?.role || 'Employee'}
+                  </span>
+                </div>
               </div>
 
               <Link
@@ -247,8 +264,19 @@ export const TopNav: React.FC<TopNavProps> = ({
                 className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition"
               >
                 <User className="w-3.5 h-3.5 text-slate-400" />
-                View My Profile
+                View My Odoo Profile
               </Link>
+
+              <button
+                onClick={() => {
+                  setShowUserMenu(false);
+                  setShowChangePassword(true);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 rounded-xl transition"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                Change System Password
+              </button>
 
               <div className="pt-1 mt-1 border-t border-slate-100 dark:border-slate-700">
                 <button
@@ -269,6 +297,12 @@ export const TopNav: React.FC<TopNavProps> = ({
 
       {/* Kiosk Modal */}
       <KioskModal isOpen={showKiosk} onClose={() => setShowKiosk(false)} />
+
+      {/* Change System Generated Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
     </header>
   );
 };
