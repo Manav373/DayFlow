@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { HRMSProvider } from './context/HRMSContext';
 import { AppLayout } from './components/layout/AppLayout';
+import { TopLoadingBar } from './components/common/TopLoadingBar';
+import { Preloader } from './components/common/Preloader';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { AdminDashboard } from './pages/AdminDashboard';
@@ -28,6 +30,10 @@ export const App: React.FC = () => {
     <AuthProvider>
       <HRMSProvider>
         <BrowserRouter>
+          {/* Startup Preloader & YouTube-Style Top Progress Bar */}
+          <Preloader />
+          <TopLoadingBar />
+
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
