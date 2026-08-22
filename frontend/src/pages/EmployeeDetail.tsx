@@ -164,9 +164,12 @@ export const EmployeeDetail: React.FC = () => {
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {formData.workInfo.jobPosition} • {formData.workInfo.department}
                 </p>
-                <span className="text-[11px] font-mono text-slate-400">
-                  Employee ID: {formData.employeeId} {isManager && `• Badge: ${formData.hrSettings.badgeId}`}
-                </span>
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-slate-400 mt-1">
+                  <span>Emp ID: <strong className="text-slate-700 dark:text-slate-300">{formData.employeeId}</strong></span>
+                  <span>•</span>
+                  <span>Login ID: <strong className="text-purple-600 dark:text-purple-400">{formData.loginId || formData.hrSettings?.loginId || 'OIJODO20220001'}</strong></span>
+                  {isManager && <span>• Badge: {formData.hrSettings.badgeId}</span>}
+                </div>
               </div>
             </div>
 
@@ -609,6 +612,18 @@ export const EmployeeDetail: React.FC = () => {
                         })
                       }
                       className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      System Login ID (Auto-Generated Format)
+                    </label>
+                    <input
+                      type="text"
+                      disabled
+                      value={formData.loginId || formData.hrSettings.loginId || 'OIJODO20220001'}
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-purple-200 dark:border-purple-900/60 bg-purple-50/50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300 font-mono font-bold cursor-not-allowed"
                     />
                   </div>
 

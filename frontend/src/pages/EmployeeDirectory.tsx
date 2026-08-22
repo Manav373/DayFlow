@@ -11,13 +11,18 @@ import {
   Briefcase,
   ExternalLink,
   Shield,
-  KeyRound
+  KeyRound,
+  Sparkles,
+  Copy,
+  Check
 } from 'lucide-react';
 import { useHRMS } from '../context/HRMSContext';
 import { useAuth } from '../context/AuthContext';
 import { Employee, EmployeeStatus } from '../types';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
+import { generateLoginId, generateInitialPassword } from '../utils/idGenerator';
+import { triggerCelebration } from '../utils/confetti';
 
 export const EmployeeDirectory: React.FC = () => {
   const navigate = useNavigate();
@@ -31,6 +36,8 @@ export const EmployeeDirectory: React.FC = () => {
   const [selectedDept, setSelectedDept] = useState<string>('All');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState<{ loginId: string; tempPass: string; name: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const [newEmpForm, setNewEmpForm] = useState({
     name: '',
@@ -49,10 +56,20 @@ export const EmployeeDirectory: React.FC = () => {
 
   const departments = ['All', 'Engineering', 'Design', 'Product', 'Human Resources', 'Finance', 'Executive'];
 
+  // Live computed Login ID preview
+  const liveJoinYear = newEmpForm.joinDate ? new Date(newEmpForm.joinDate).getFullYear() : 2026;
+  const previewLoginId = generateLoginId(
+    newEmpForm.name || 'John Doe',
+    liveJoinYear,
+    employees.length + 1,
+    user?.companyName || 'Odoo India'
+  );
+
   const filteredEmployees = employees.filter((emp) => {
     const matchesSearch =
       emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (emp.loginId && emp.loginId.toLowerCase().includes(searchQuery.toLowerCase())) ||
       emp.workInfo.jobPosition.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.employeeId.toLowerCase().includes(searchQuery.toLowerCase());
 
@@ -66,11 +83,13 @@ export const EmployeeDirectory: React.FC = () => {
     e.preventDefault();
     if (!newEmpForm.name || !newEmpForm.email) return;
 
+    const tempPassword = generateInitialPassword();
     const created = await addEmployee({
       name: newEmpForm.name,
       email: newEmpForm.email,
       phone: newEmpForm.phone,
       status: newEmpForm.status,
+      loginId: previewLoginId,
       workInfo: {
         department: newEmpForm.department,
         jobPosition: newEmpForm.role || newEmpForm.designation,
@@ -79,11 +98,34 @@ export const EmployeeDirectory: React.FC = () => {
         workAddress: '100 Montgomery St, San Francisco, CA',
         workSchedule: 'Standard 40 Hours',
         joinDate: newEmpForm.joinDate
+      },
+      hrSettings: {
+        badgeId: `BADGE-${Math.floor(1000 + Math.random() * 9000)}`,
+        pinCode: `${Math.floor(1000 + Math.random() * 9000)}`,
+        role: 'employee',
+        salary: newEmpForm.salary,
+        loginId: previewLoginId,
+        initialPassword: tempPassword
       }
     });
 
+    triggerCelebration();
     setIsAddModalOpen(false);
-    navigate(`/employee/${created.id}`);
+    setCreatedCredentials({
+      loginId: previewLoginId,
+      tempPass: tempPassword,
+      name: created.name
+    });
+  };
+
+  const copyCredentials = () => {
+    if (createdCredentials) {
+      navigator.clipboard.writeText(
+        `DayFlow Login Credentials:\nName: ${createdCredentials.name}\nLogin ID: ${createdCredentials.loginId}\nTemporary Password: ${createdCredentials.tempPass}\nPortal URL: ${window.location.origin}/login`
+      );
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
   };
 
   const containerVariants = {
@@ -111,7 +153,7 @@ export const EmployeeDirectory: React.FC = () => {
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {isManager
-              ? 'Odoo-style master employee cards & comprehensive profile records'
+              ? 'Corporate master records with automated system Login ID generation'
               : 'Browse corporate directory and team members'}
           </p>
         </div>
@@ -123,7 +165,7 @@ export const EmployeeDirectory: React.FC = () => {
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md transition"
+              className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-md transition"
             >
               <UserPlus className="w-4 h-4" />
               Add New Employee
@@ -140,8 +182,8 @@ export const EmployeeDirectory: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name, role, email, or employee ID..."
-            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+            placeholder="Search by name, Login ID (e.g. OIJODO...), role, or email..."
+            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
           />
         </div>
 
@@ -174,7 +216,7 @@ export const EmployeeDirectory: React.FC = () => {
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-lg transition ${
                 viewMode === 'grid'
-                  ? 'bg-white dark:bg-slate-800 text-brand-600 shadow-xs'
+                  ? 'bg-white dark:bg-slate-800 text-purple-600 shadow-xs'
                   : 'text-slate-400 hover:text-slate-600'
               }`}
             >
@@ -184,7 +226,7 @@ export const EmployeeDirectory: React.FC = () => {
               onClick={() => setViewMode('table')}
               className={`p-1.5 rounded-lg transition ${
                 viewMode === 'table'
-                  ? 'bg-white dark:bg-slate-800 text-brand-600 shadow-xs'
+                  ? 'bg-white dark:bg-slate-800 text-purple-600 shadow-xs'
                   : 'text-slate-400 hover:text-slate-600'
               }`}
             >
@@ -194,7 +236,7 @@ export const EmployeeDirectory: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid View with Stagger Animation */}
+      {/* Grid View */}
       {viewMode === 'grid' ? (
         <motion.div
           variants={containerVariants}
@@ -212,7 +254,7 @@ export const EmployeeDirectory: React.FC = () => {
                 whileHover={{ y: -6, transition: { duration: 0.2 } }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate(`/employee/${emp.id}`)}
-                className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-soft hover:shadow-elevated hover:border-brand-300 dark:hover:border-brand-600 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
+                className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-soft hover:shadow-elevated hover:border-purple-300 dark:hover:border-purple-600 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-start justify-between">
@@ -225,17 +267,22 @@ export const EmployeeDirectory: React.FC = () => {
                       />
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-brand-600 transition">
+                          <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-600 transition">
                             {emp.name}
                           </h3>
                           {isOwnProfile && (
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-brand-50 text-brand-700 font-bold">
+                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 font-bold">
                               You
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-slate-500 font-medium">{emp.workInfo.jobPosition}</p>
-                        <span className="text-[10px] text-slate-400 font-mono">{emp.employeeId}</span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] font-mono text-purple-600 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-950/40 px-1.5 py-0.5 rounded">
+                            {emp.loginId || 'OIJODO20220001'}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">({emp.employeeId})</span>
+                        </div>
                       </div>
                     </div>
 
@@ -264,7 +311,6 @@ export const EmployeeDirectory: React.FC = () => {
                 </div>
 
                 <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-between">
-                  {/* Sensitive PIN is ONLY visible to Admin/HR or the user on their own card */}
                   {isManager || isOwnProfile ? (
                     <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
                       <KeyRound className="w-3 h-3 text-slate-400" /> PIN: {emp.hrSettings.pinCode}
@@ -274,7 +320,7 @@ export const EmployeeDirectory: React.FC = () => {
                       {emp.workInfo.workSchedule.split(' ')[0]} Schedule
                     </span>
                   )}
-                  <span className="text-xs font-bold text-brand-600 dark:text-brand-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                  <span className="text-xs font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                     {isOwnProfile || isManager ? 'Odoo Profile' : 'View Profile'} <ExternalLink className="w-3.5 h-3.5" />
                   </span>
                 </div>
@@ -294,6 +340,7 @@ export const EmployeeDirectory: React.FC = () => {
               <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="px-6 py-4">Employee</th>
+                  <th className="px-6 py-4">System Login ID</th>
                   <th className="px-6 py-4">Department</th>
                   <th className="px-6 py-4">Job Position</th>
                   <th className="px-6 py-4">Location</th>
@@ -317,6 +364,11 @@ export const EmployeeDirectory: React.FC = () => {
                         </div>
                       </div>
                     </td>
+                    <td className="px-6 py-4">
+                      <span className="font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded">
+                        {emp.loginId || 'OIJODO20220001'}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 font-semibold text-slate-700 dark:text-slate-300">
                       {emp.workInfo.department}
                     </td>
@@ -336,7 +388,7 @@ export const EmployeeDirectory: React.FC = () => {
                           e.stopPropagation();
                           navigate(`/employee/${emp.id}`);
                         }}
-                        className="text-xs font-bold text-brand-600 hover:underline"
+                        className="text-xs font-bold text-purple-600 hover:underline"
                       >
                         View Tabs →
                       </button>
@@ -349,16 +401,34 @@ export const EmployeeDirectory: React.FC = () => {
         </motion.div>
       )}
 
-      {/* Add Employee Modal */}
+      {/* Add Employee Modal with Live Login ID Generation */}
       {isManager && (
         <Modal
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
-          title="Add New Employee (Odoo Record)"
-          subtitle="Initialize new employment file with work information"
+          title="Onboard New Employee (System Login ID Generator)"
+          subtitle="Generates unique standardized Login ID & temporary access credentials"
           maxWidth="2xl"
         >
           <form onSubmit={handleAddSubmit} className="space-y-4">
+            {/* Live Login ID Preview Banner */}
+            <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-[10px] uppercase font-extrabold tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> Auto-Generated Login ID Formula
+                </span>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300">
+                  Format: <span className="font-mono font-bold text-purple-800 dark:text-purple-200">[OI][Name2+2][Year][Serial]</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-base font-black font-mono text-purple-700 dark:text-purple-300">
+                  {previewLoginId}
+                </div>
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Ready to assign</span>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -369,20 +439,20 @@ export const EmployeeDirectory: React.FC = () => {
                   required
                   value={newEmpForm.name}
                   onChange={(e) => setNewEmpForm({ ...newEmpForm, name: e.target.value })}
-                  placeholder="e.g. Cameron Diaz"
+                  placeholder="e.g. John Doe"
                   className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
                 />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Email Address *
+                  Corporate Email *
                 </label>
                 <input
                   type="email"
                   required
                   value={newEmpForm.email}
                   onChange={(e) => setNewEmpForm({ ...newEmpForm, email: e.target.value })}
-                  placeholder="cameron.d@dayflow.io"
+                  placeholder="john.doe@odooindia.com"
                   className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
                 />
               </div>
@@ -395,7 +465,7 @@ export const EmployeeDirectory: React.FC = () => {
                   required
                   value={newEmpForm.designation}
                   onChange={(e) => setNewEmpForm({ ...newEmpForm, designation: e.target.value, role: e.target.value })}
-                  placeholder="e.g. UX Researcher"
+                  placeholder="e.g. Senior Software Engineer"
                   className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
                 />
               </div>
@@ -413,6 +483,30 @@ export const EmployeeDirectory: React.FC = () => {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Year of Joining (For ID Formula)
+                </label>
+                <input
+                  type="date"
+                  value={newEmpForm.joinDate}
+                  onChange={(e) => setNewEmpForm({ ...newEmpForm, joinDate: e.target.value })}
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Gross Annual Salary ($)
+                </label>
+                <input
+                  type="number"
+                  value={newEmpForm.salary}
+                  onChange={(e) => setNewEmpForm({ ...newEmpForm, salary: Number(e.target.value) })}
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white"
+                />
+              </div>
             </div>
 
             <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3">
@@ -425,12 +519,56 @@ export const EmployeeDirectory: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-md transition"
+                className="px-5 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-500 rounded-xl shadow-md transition"
               >
-                Save and Edit Full Tabs →
+                Provision Account & View Credentials →
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Generated Credentials Success Modal */}
+      {createdCredentials && (
+        <Modal
+          isOpen={!!createdCredentials}
+          onClose={() => setCreatedCredentials(null)}
+          title="Account Provisioned Successfully!"
+          subtitle="Share these initial login credentials with the new employee"
+          maxWidth="md"
+        >
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-1">
+              <Sparkles className="w-8 h-8 text-emerald-500 mx-auto" />
+              <h3 className="text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                {createdCredentials.name} is ready to sign in!
+              </h3>
+              <p className="text-xs text-slate-500">
+                The employee can log in using their Login ID and change their temporary password.
+              </p>
+            </div>
+
+            <div className="space-y-3 bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 font-mono text-xs">
+              <div className="flex justify-between items-center py-1 border-b border-slate-200 dark:border-slate-800">
+                <span className="text-slate-500">Login ID:</span>
+                <strong className="text-purple-600 dark:text-purple-400 text-sm">{createdCredentials.loginId}</strong>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-slate-500">Initial Password:</span>
+                <strong className="text-slate-800 dark:text-slate-200">{createdCredentials.tempPass}</strong>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={copyCredentials}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition shadow-md"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'Copied Credentials!' : 'Copy Credentials to Clipboard'}
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>

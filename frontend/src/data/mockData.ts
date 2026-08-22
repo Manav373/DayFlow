@@ -4,6 +4,7 @@ export const initialEmployees: Employee[] = [
   {
     id: 'emp-1',
     employeeId: 'DF-1001',
+    loginId: 'OISAJE20220001',
     name: 'Sarah Jenkins',
     email: 'sarah.j@dayflow.io',
     phone: '+1 (555) 234-5678',
@@ -36,7 +37,8 @@ export const initialEmployees: Employee[] = [
       pinCode: '1001',
       role: 'employee',
       salary: 135000,
-      userId: 'usr-3'
+      userId: 'usr-3',
+      loginId: 'OISAJE20220001'
     },
     leaveBalance: { casual: 12, casualUsed: 3, sick: 10, sickUsed: 1, annual: 18, annualUsed: 5, maternity: 60, maternityUsed: 0 },
     attendanceToday: 'Present'
@@ -44,6 +46,7 @@ export const initialEmployees: Employee[] = [
   {
     id: 'emp-2',
     employeeId: 'DF-1002',
+    loginId: 'OIALRI20210002',
     name: 'Alex Rivera',
     email: 'alex.rivera@dayflow.io',
     phone: '+1 (555) 345-6789',
@@ -76,7 +79,8 @@ export const initialEmployees: Employee[] = [
       pinCode: '1002',
       role: 'employee',
       salary: 145000,
-      userId: 'usr-4'
+      userId: 'usr-4',
+      loginId: 'OIALRI20210002'
     },
     leaveBalance: { casual: 12, casualUsed: 4, sick: 10, sickUsed: 2, annual: 18, annualUsed: 7, maternity: 30, maternityUsed: 0 },
     attendanceToday: 'Present'
@@ -84,6 +88,7 @@ export const initialEmployees: Employee[] = [
   {
     id: 'emp-3',
     employeeId: 'DF-1004',
+    loginId: 'OIDAST20190003',
     name: 'David Sterling',
     email: 'david.s@dayflow.io',
     phone: '+1 (555) 123-4567',
@@ -116,7 +121,8 @@ export const initialEmployees: Employee[] = [
       pinCode: '0001',
       role: 'admin',
       salary: 240000,
-      userId: 'usr-1'
+      userId: 'usr-1',
+      loginId: 'OIDAST20190003'
     },
     leaveBalance: { casual: 15, casualUsed: 1, sick: 12, sickUsed: 1, annual: 25, annualUsed: 4, maternity: 0, maternityUsed: 0 },
     attendanceToday: 'Present'
@@ -124,6 +130,7 @@ export const initialEmployees: Employee[] = [
   {
     id: 'emp-4',
     employeeId: 'DF-1005',
+    loginId: 'OIPRSH20210004',
     name: 'Priya Sharma',
     email: 'priya.s@dayflow.io',
     phone: '+1 (555) 567-8901',
@@ -156,7 +163,8 @@ export const initialEmployees: Employee[] = [
       pinCode: '1005',
       role: 'hr_officer',
       salary: 150000,
-      userId: 'usr-2'
+      userId: 'usr-2',
+      loginId: 'OIPRSH20210004'
     },
     leaveBalance: { casual: 12, casualUsed: 2, sick: 10, sickUsed: 1, annual: 20, annualUsed: 8, maternity: 60, maternityUsed: 0 },
     attendanceToday: 'Present'

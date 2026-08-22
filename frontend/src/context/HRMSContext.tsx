@@ -17,6 +17,7 @@ import {
   initialActivities
 } from '../data/mockData';
 import { useAuth } from './AuthContext';
+import { generateLoginId, generateInitialPassword } from '../utils/idGenerator';
 
 interface HRMSContextType {
   employees: Employee[];
@@ -49,27 +50,27 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { user } = useAuth();
 
   const [employees, setEmployees] = useState<Employee[]>(() => {
-    const saved = localStorage.getItem('dayflow_employees_v2');
+    const saved = localStorage.getItem('dayflow_employees_v3');
     return saved ? JSON.parse(saved) : initialEmployees;
   });
 
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(() => {
-    const saved = localStorage.getItem('dayflow_attendance_v2');
+    const saved = localStorage.getItem('dayflow_attendance_v3');
     return saved ? JSON.parse(saved) : initialAttendanceRecords;
   });
 
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>(() => {
-    const saved = localStorage.getItem('dayflow_leaves_v2');
+    const saved = localStorage.getItem('dayflow_leaves_v3');
     return saved ? JSON.parse(saved) : initialLeaveRequests;
   });
 
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>(() => {
-    const saved = localStorage.getItem('dayflow_payroll_v2');
+    const saved = localStorage.getItem('dayflow_payroll_v3');
     return saved ? JSON.parse(saved) : initialPayrollRecords;
   });
 
   const [activities, setActivities] = useState<ActivityLog[]>(() => {
-    const saved = localStorage.getItem('dayflow_activities_v2');
+    const saved = localStorage.getItem('dayflow_activities_v3');
     return saved ? JSON.parse(saved) : initialActivities;
   });
 
@@ -78,19 +79,19 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Sync to local storage
   useEffect(() => {
-    localStorage.setItem('dayflow_employees_v2', JSON.stringify(employees));
+    localStorage.setItem('dayflow_employees_v3', JSON.stringify(employees));
   }, [employees]);
 
   useEffect(() => {
-    localStorage.setItem('dayflow_attendance_v2', JSON.stringify(attendanceRecords));
+    localStorage.setItem('dayflow_attendance_v3', JSON.stringify(attendanceRecords));
   }, [attendanceRecords]);
 
   useEffect(() => {
-    localStorage.setItem('dayflow_leaves_v2', JSON.stringify(leaveRequests));
+    localStorage.setItem('dayflow_leaves_v3', JSON.stringify(leaveRequests));
   }, [leaveRequests]);
 
   useEffect(() => {
-    localStorage.setItem('dayflow_payroll_v2', JSON.stringify(payrollRecords));
+    localStorage.setItem('dayflow_payroll_v3', JSON.stringify(payrollRecords));
   }, [payrollRecords]);
 
   // Shift timer
@@ -185,12 +186,25 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addEmployee = async (empData: Partial<Employee>): Promise<Employee> => {
+    const fullName = empData.name || 'New Team Member';
+    const joinYear = empData.workInfo?.joinDate ? new Date(empData.workInfo.joinDate).getFullYear() : new Date().getFullYear();
+    const serialNum = employees.length + 1;
+    const company = user?.companyName || 'Odoo India';
+
+    // System-generated Login ID: [OI][JODO][2022][0001]
+    const calculatedLoginId = empData.loginId || generateLoginId(fullName, joinYear, serialNum, company);
+    const initialTempPassword = generateInitialPassword();
+
     let created: Employee;
     try {
       const res = await fetch('/api/employees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(empData)
+        body: JSON.stringify({
+          ...empData,
+          loginId: calculatedLoginId,
+          initialPassword: initialTempPassword
+        })
       });
       if (res.ok) {
         created = await res.json();
@@ -205,7 +219,8 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
     created = {
       id: `emp-${Date.now()}`,
       employeeId: newEmpId,
-      name: empData.name || 'New Team Member',
+      loginId: calculatedLoginId,
+      name: fullName,
       email: empData.email || 'employee@dayflow.io',
       phone: empData.phone || '+1 (555) 000-0000',
       avatar: empData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
@@ -234,7 +249,9 @@ export const HRMSProvider: React.FC<{ children: React.ReactNode }> = ({ children
         badgeId: empData.hrSettings?.badgeId || `BADGE-${Math.floor(1000 + Math.random() * 9000)}`,
         pinCode: empData.hrSettings?.pinCode || `${Math.floor(1000 + Math.random() * 9000)}`,
         role: empData.hrSettings?.role || 'employee',
-        salary: empData.hrSettings?.salary || 100000
+        salary: empData.hrSettings?.salary || 100000,
+        loginId: calculatedLoginId,
+        initialPassword: initialTempPassword
       },
       leaveBalance: {
         casual: 12,

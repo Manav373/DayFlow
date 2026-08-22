@@ -4,32 +4,16 @@ export type EmployeeStatus = 'Active' | 'On Leave' | 'Probation' | 'Inactive';
 
 export type AttendanceStatus = 'Present' | 'Late' | 'Half Day' | 'On Leave' | 'Absent';
 
-export type LeaveType = 'Paid Time Off (Annual)' | 'Sick Time Off' | 'Casual Leave' | 'Parental Leave' | 'Unpaid Leave';
+export type LeaveType =
+  | 'Paid Time Off (Annual)'
+  | 'Sick Time Off'
+  | 'Casual Leave'
+  | 'Parental Leave'
+  | 'Unpaid Leave';
 
-export type LeaveStatus = 'Pending' | 'Approved' | 'Rejected';
+export type LeaveStatus = 'Approved' | 'Pending' | 'Rejected';
 
 export type PayrollStatus = 'Paid' | 'Processing' | 'Pending';
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  password?: string;
-  role: UserRole;
-  employeeId?: string;
-  avatar?: string;
-}
-
-export interface LeaveBalance {
-  casual: number;
-  casualUsed: number;
-  sick: number;
-  sickUsed: number;
-  annual: number;
-  annualUsed: number;
-  maternity: number;
-  maternityUsed: number;
-}
 
 export interface WorkInfo {
   department: string;
@@ -61,11 +45,25 @@ export interface HRSettings {
   role: UserRole;
   salary: number;
   userId?: string;
+  loginId?: string;
+  initialPassword?: string;
+}
+
+export interface LeaveBalance {
+  casual: number;
+  casualUsed: number;
+  sick: number;
+  sickUsed: number;
+  annual: number;
+  annualUsed: number;
+  maternity: number;
+  maternityUsed: number;
 }
 
 export interface Employee {
   id: string;
   employeeId: string;
+  loginId: string;
   name: string;
   email: string;
   phone: string;
@@ -76,6 +74,19 @@ export interface Employee {
   hrSettings: HRSettings;
   leaveBalance: LeaveBalance;
   attendanceToday?: AttendanceStatus;
+}
+
+export interface User {
+  id: string;
+  loginId?: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  employeeId?: string;
+  avatar?: string;
+  companyName?: string;
+  companyLogo?: string;
+  phone?: string;
 }
 
 export interface AttendanceRecord {

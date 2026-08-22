@@ -5,14 +5,14 @@ import {
   Sparkles,
   Lock,
   Mail,
-  ArrowRight,
   Shield,
   UserCheck,
   User,
   Eye,
   EyeOff,
   CheckCircle2,
-  Loader2
+  Loader2,
+  KeyRound
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { triggerSuccessBurst } from '../utils/confetti';
@@ -21,7 +21,7 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login, quickLoginAs } = useAuth();
 
-  const [email, setEmail] = useState('david.s@dayflow.io');
+  const [loginIdOrEmail, setLoginIdOrEmail] = useState('OISAJE20220001');
   const [password, setPassword] = useState('password123');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -33,220 +33,216 @@ export const Login: React.FC = () => {
     setError('');
     setLoading(true);
 
-    const success = await login(email, password);
+    const success = await login(loginIdOrEmail, password);
 
     if (success) {
       triggerSuccessBurst();
-      setSuccessGreet('Welcome back! Loading your workspace...');
+      setSuccessGreet('Authenticated! Initializing workspace session...');
       setTimeout(() => {
         navigate('/');
-      }, 700);
+      }, 600);
     } else {
       setLoading(false);
-      setError('Invalid email or password credentials. Please retry.');
+      setError('Invalid Login ID, Email, or Password. Please try again.');
     }
   };
 
-  const handleQuickPersona = (role: 'admin' | 'hr_officer' | 'employee') => {
+  const handleQuickPersona = (role: 'admin' | 'hr_officer' | 'employee', idVal: string) => {
+    setLoginIdOrEmail(idVal);
     quickLoginAs(role);
     triggerSuccessBurst();
-    setSuccessGreet(`Signing in as ${role === 'admin' ? 'David Sterling (Admin)' : role === 'hr_officer' ? 'Priya Sharma (HR)' : 'Sarah Jenkins (Employee)'}...`);
+    setSuccessGreet(`Signing in as ${role === 'admin' ? 'David Sterling' : role === 'hr_officer' ? 'Priya Sharma' : 'Sarah Jenkins'} (${idVal})...`);
     setTimeout(() => {
       navigate(role === 'employee' ? '/employee-portal' : '/');
     }, 600);
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated Ambient Background Blobs */}
+    <div className="min-h-screen bg-[#080c14] text-slate-100 flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      {/* Background Animated Blobs */}
       <motion.div
         animate={{
-          x: [0, 40, 0],
+          x: [0, 30, 0],
           y: [0, -30, 0],
-          scale: [1, 1.2, 1],
+          scale: [1, 1.15, 1],
         }}
         transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-1/4 -left-20 w-96 h-96 bg-brand-600/25 rounded-full blur-3xl pointer-events-none"
+        className="absolute top-1/4 -left-16 w-80 h-80 bg-purple-600/25 rounded-full blur-3xl pointer-events-none"
       />
       <motion.div
         animate={{
-          x: [0, -40, 0],
+          x: [0, -30, 0],
           y: [0, 30, 0],
-          scale: [1, 1.25, 1],
+          scale: [1, 1.2, 1],
         }}
         transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute bottom-1/4 -right-20 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"
-      />
-      <motion.div
-        animate={{
-          scale: [1, 1.15, 1],
-          opacity: [0.15, 0.3, 0.15],
-        }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"
+        className="absolute bottom-1/4 -right-16 w-80 h-80 bg-indigo-500/25 rounded-full blur-3xl pointer-events-none"
       />
 
-      {/* Floating Glassmorphism Login Card */}
+      {/* Main Sign In Card */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.92, y: 20 }}
+        initial={{ opacity: 0, scale: 0.94, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="w-full max-w-md bg-white/95 dark:bg-slate-900/90 backdrop-blur-2xl rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xl p-8 space-y-6 relative z-10 text-slate-900 dark:text-white"
+        transition={{ type: 'spring', damping: 25, stiffness: 320 }}
+        className="w-full max-w-md bg-[#131926]/95 backdrop-blur-2xl rounded-3xl border border-slate-700/80 shadow-2xl p-8 space-y-6 relative z-10 text-white"
       >
-        {/* Brand Header */}
+        {/* App/Web Logo Box (from wireframe) */}
         <div className="text-center space-y-2">
-          <motion.div
-            whileHover={{ scale: 1.1, rotate: 10 }}
-            whileTap={{ scale: 0.95 }}
-            className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-emerald-400 mx-auto flex items-center justify-center text-white shadow-xl shadow-brand-500/30 cursor-pointer"
-          >
-            <Sparkles className="w-7 h-7" />
-          </motion.div>
-          <h1 className="text-2xl font-extrabold tracking-tight">
-            Sign In to DayFlow
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Enterprise Human Resource Management System
+          <div className="w-full max-w-[220px] mx-auto py-2.5 px-4 bg-slate-800/80 border border-slate-700 rounded-2xl flex items-center justify-center gap-2 shadow-inner">
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center text-white">
+              <Sparkles className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-xs font-black tracking-widest uppercase text-slate-200">
+              DAYFLOW HRMS
+            </span>
+          </div>
+          <h2 className="text-xl font-bold tracking-tight pt-1">
+            Sign in to Your Account
+          </h2>
+          <p className="text-xs text-slate-400">
+            Enter your system-generated Login ID or Email
           </p>
         </div>
 
-        {/* Error or Success Toast */}
+        {/* Feedback Alerts */}
         <AnimatePresence>
           {error && (
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
+              initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="p-3 rounded-2xl bg-rose-50 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-bold text-center"
+              exit={{ opacity: 0, y: -6 }}
+              className="p-3 rounded-2xl bg-rose-950/60 border border-rose-800 text-rose-300 text-xs font-bold text-center"
             >
               {error}
             </motion.div>
           )}
           {successGreet && (
             <motion.div
-              initial={{ opacity: 0, y: -8 }}
+              initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold text-center flex items-center justify-center gap-2"
+              className="p-3 rounded-2xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs font-bold text-center flex items-center justify-center gap-2"
             >
-              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               {successGreet}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Form */}
+        {/* Form Inputs (Wireframe standard) */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-              Email Address
+            <label className="block text-xs font-bold text-slate-300 mb-1.5">
+              Login Id / Email :-
             </label>
             <div className="relative group">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 group-focus-within:text-brand-600 transition" />
+              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 group-focus-within:text-purple-400 transition" />
               <input
-                type="email"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@dayflow.io"
-                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition"
+                value={loginIdOrEmail}
+                onChange={(e) => setLoginIdOrEmail(e.target.value)}
+                placeholder="e.g. OIJODO20220001 or name@dayflow.io"
+                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-700 bg-slate-900/90 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition font-mono"
               />
             </div>
+            <p className="text-[10px] text-slate-400 mt-1">
+              Example Login ID format: <code className="text-purple-300">OIJODO20220001</code>
+            </p>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                Password
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-slate-300">
+                Password :-
               </label>
-              <a href="#forgot" className="text-[11px] font-semibold text-brand-600 dark:text-brand-400 hover:underline">
+              <a href="#forgot" className="text-[11px] font-semibold text-purple-400 hover:underline">
                 Forgot password?
               </a>
             </div>
             <div className="relative group">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 group-focus-within:text-brand-600 transition" />
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 group-focus-within:text-purple-400 transition" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition font-mono"
+                className="w-full pl-10 pr-10 py-2.5 text-xs rounded-xl border border-slate-700 bg-slate-900/90 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition font-mono"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
+          {/* Wireframe Signature Purple Action Button */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-md shadow-brand-500/25 transition disabled:opacity-50"
+            className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs tracking-wider rounded-xl shadow-lg shadow-purple-600/30 transition disabled:opacity-50 uppercase mt-2"
           >
             {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Authenticating...
-              </>
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Verifying Credentials...
+              </span>
             ) : (
-              <>
-                Sign In to Portal <ArrowRight className="w-4 h-4" />
-              </>
+              'SIGN IN'
             )}
           </motion.button>
         </form>
 
-        {/* Quick Demo Personas */}
-        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 text-center mb-3">
-            Quick 1-Click Demo Login
+        {/* Quick 1-Click Login ID Personas */}
+        <div className="pt-3 border-t border-slate-800">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 text-center mb-2.5">
+            1-Click Login with System IDs
           </p>
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-3 gap-2">
             <motion.button
               whileHover={{ y: -2, scale: 1.03 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => handleQuickPersona('admin')}
-              className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-slate-200/80 dark:border-slate-700 text-center transition group"
+              onClick={() => handleQuickPersona('admin', 'OIDAST20190003')}
+              className="p-2 rounded-xl bg-slate-800/80 hover:bg-purple-950/40 border border-slate-700 text-center transition"
             >
-              <Shield className="w-5 h-5 text-brand-600 mx-auto mb-1 group-hover:scale-110 transition" />
-              <div className="text-xs font-bold text-slate-900 dark:text-white">Admin</div>
-              <div className="text-[10px] text-slate-400">Full Access</div>
+              <Shield className="w-4 h-4 text-purple-400 mx-auto mb-1" />
+              <div className="text-[11px] font-bold text-white">Admin</div>
+              <div className="text-[9px] font-mono text-purple-300">OIDAST20190003</div>
             </motion.button>
 
             <motion.button
               whileHover={{ y: -2, scale: 1.03 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => handleQuickPersona('hr_officer')}
-              className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/80 dark:border-slate-700 text-center transition group"
+              onClick={() => handleQuickPersona('hr_officer', 'OIPRSH20210004')}
+              className="p-2 rounded-xl bg-slate-800/80 hover:bg-purple-950/40 border border-slate-700 text-center transition"
             >
-              <UserCheck className="w-5 h-5 text-emerald-600 mx-auto mb-1 group-hover:scale-110 transition" />
-              <div className="text-xs font-bold text-slate-900 dark:text-white">HR Lead</div>
-              <div className="text-[10px] text-slate-400">Approvals</div>
+              <UserCheck className="w-4 h-4 text-emerald-400 mx-auto mb-1" />
+              <div className="text-[11px] font-bold text-white">HR Officer</div>
+              <div className="text-[9px] font-mono text-emerald-300">OIPRSH20210004</div>
             </motion.button>
 
             <motion.button
               whileHover={{ y: -2, scale: 1.03 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => handleQuickPersona('employee')}
-              className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800 hover:bg-purple-50 dark:hover:bg-purple-950/40 border border-slate-200/80 dark:border-slate-700 text-center transition group"
+              onClick={() => handleQuickPersona('employee', 'OISAJE20220001')}
+              className="p-2 rounded-xl bg-slate-800/80 hover:bg-purple-950/40 border border-slate-700 text-center transition"
             >
-              <User className="w-5 h-5 text-purple-600 mx-auto mb-1 group-hover:scale-110 transition" />
-              <div className="text-xs font-bold text-slate-900 dark:text-white">Employee</div>
-              <div className="text-[10px] text-slate-400">Self Service</div>
+              <User className="w-4 h-4 text-indigo-400 mx-auto mb-1" />
+              <div className="text-[11px] font-bold text-white">Employee</div>
+              <div className="text-[9px] font-mono text-indigo-300">OISAJE20220001</div>
             </motion.button>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="text-center text-xs text-slate-500 dark:text-slate-400">
-          Don't have an account?{' '}
-          <Link to="/register" className="font-bold text-brand-600 dark:text-brand-400 hover:underline">
-            Register new employee
+        {/* Footer (from wireframe) */}
+        <div className="text-center text-xs text-slate-400 pt-1">
+          Don't have an Account?{' '}
+          <Link to="/register" className="font-bold text-purple-400 hover:text-purple-300 underline underline-offset-4">
+            Sign Up
           </Link>
         </div>
       </motion.div>

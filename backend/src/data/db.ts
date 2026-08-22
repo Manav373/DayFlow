@@ -1,48 +1,53 @@
-import { Employee, AttendanceRecord, LeaveRequest, PayrollRecord, User } from '../types/index.js';
+import { Employee, User, AttendanceRecord, LeaveRequest, PayrollRecord } from '../types';
 
-export const initialUsers: User[] = [
+export const usersDB: User[] = [
   {
     id: 'usr-1',
-    name: 'David Sterling',
+    loginId: 'OIDAST20190003',
     email: 'admin@dayflow.io',
-    password: 'password123',
+    name: 'David Sterling',
     role: 'admin',
     employeeId: 'DF-1004',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    companyName: 'Odoo India'
   },
   {
     id: 'usr-2',
+    loginId: 'OIPRSH20210004',
+    email: 'priya.s@dayflow.io',
     name: 'Priya Sharma',
-    email: 'hr@dayflow.io',
-    password: 'password123',
     role: 'hr_officer',
     employeeId: 'DF-1005',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    companyName: 'Odoo India'
   },
   {
     id: 'usr-3',
+    loginId: 'OISAJE20220001',
+    email: 'sarah.j@dayflow.io',
     name: 'Sarah Jenkins',
-    email: 'sarah@dayflow.io',
-    password: 'password123',
     role: 'employee',
     employeeId: 'DF-1001',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    companyName: 'Odoo India'
   },
   {
     id: 'usr-4',
+    loginId: 'OIALRI20210002',
+    email: 'alex.rivera@dayflow.io',
     name: 'Alex Rivera',
-    email: 'alex@dayflow.io',
-    password: 'password123',
     role: 'employee',
     employeeId: 'DF-1002',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    companyName: 'Odoo India'
   }
 ];
 
-export const initialEmployees: Employee[] = [
+export const employeesDB: Employee[] = [
   {
     id: 'emp-1',
     employeeId: 'DF-1001',
+    loginId: 'OISAJE20220001',
     name: 'Sarah Jenkins',
     email: 'sarah.j@dayflow.io',
     phone: '+1 (555) 234-5678',
@@ -66,14 +71,17 @@ export const initialEmployees: Employee[] = [
       bankAccountNumber: '•••• •••• 4589',
       bankIfscOrRouting: 'SVB120934',
       identificationNumber: 'SSN-984-21-4321',
-      address: '424 Market Street, Apt 5B, San Francisco, CA'
+      address: '424 Market Street, Apt 5B, San Francisco, CA',
+      dateOfBirth: '1992-05-14',
+      gender: 'Female'
     },
     hrSettings: {
       badgeId: 'BADGE-8841',
       pinCode: '1001',
       role: 'employee',
       salary: 135000,
-      userId: 'usr-3'
+      userId: 'usr-3',
+      loginId: 'OISAJE20220001'
     },
     leaveBalance: { casual: 12, casualUsed: 3, sick: 10, sickUsed: 1, annual: 18, annualUsed: 5, maternity: 60, maternityUsed: 0 },
     attendanceToday: 'Present'
@@ -81,6 +89,7 @@ export const initialEmployees: Employee[] = [
   {
     id: 'emp-2',
     employeeId: 'DF-1002',
+    loginId: 'OIALRI20210002',
     name: 'Alex Rivera',
     email: 'alex.rivera@dayflow.io',
     phone: '+1 (555) 345-6789',
@@ -104,14 +113,17 @@ export const initialEmployees: Employee[] = [
       bankAccountNumber: '•••• •••• 7731',
       bankIfscOrRouting: 'CHAS00234',
       identificationNumber: 'SSN-451-88-9012',
-      address: '1204 Colorado St, Austin, TX'
+      address: '1204 Colorado St, Austin, TX',
+      dateOfBirth: '1990-11-20',
+      gender: 'Male'
     },
     hrSettings: {
       badgeId: 'BADGE-7721',
       pinCode: '1002',
       role: 'employee',
       salary: 145000,
-      userId: 'usr-4'
+      userId: 'usr-4',
+      loginId: 'OIALRI20210002'
     },
     leaveBalance: { casual: 12, casualUsed: 4, sick: 10, sickUsed: 2, annual: 18, annualUsed: 7, maternity: 30, maternityUsed: 0 },
     attendanceToday: 'Present'
@@ -119,6 +131,7 @@ export const initialEmployees: Employee[] = [
   {
     id: 'emp-3',
     employeeId: 'DF-1004',
+    loginId: 'OIDAST20190003',
     name: 'David Sterling',
     email: 'david.s@dayflow.io',
     phone: '+1 (555) 123-4567',
@@ -142,14 +155,17 @@ export const initialEmployees: Employee[] = [
       bankAccountNumber: '•••• •••• 9920',
       bankIfscOrRouting: 'FRB009112',
       identificationNumber: 'SSN-112-44-8899',
-      address: '88 Pacific Heights, San Francisco, CA'
+      address: '88 Pacific Heights, San Francisco, CA',
+      dateOfBirth: '1984-03-10',
+      gender: 'Male'
     },
     hrSettings: {
       badgeId: 'BADGE-0001',
       pinCode: '0001',
       role: 'admin',
       salary: 240000,
-      userId: 'usr-1'
+      userId: 'usr-1',
+      loginId: 'OIDAST20190003'
     },
     leaveBalance: { casual: 15, casualUsed: 1, sick: 12, sickUsed: 1, annual: 25, annualUsed: 4, maternity: 0, maternityUsed: 0 },
     attendanceToday: 'Present'
@@ -157,6 +173,7 @@ export const initialEmployees: Employee[] = [
   {
     id: 'emp-4',
     employeeId: 'DF-1005',
+    loginId: 'OIPRSH20210004',
     name: 'Priya Sharma',
     email: 'priya.s@dayflow.io',
     phone: '+1 (555) 567-8901',
@@ -180,21 +197,24 @@ export const initialEmployees: Employee[] = [
       bankAccountNumber: '•••• •••• 3341',
       bankIfscOrRouting: 'BOA110022',
       identificationNumber: 'SSN-334-99-1234',
-      address: '221 E 44th St, New York, NY'
+      address: '221 E 44th St, New York, NY',
+      dateOfBirth: '1989-08-22',
+      gender: 'Female'
     },
     hrSettings: {
       badgeId: 'BADGE-0005',
       pinCode: '1005',
       role: 'hr_officer',
       salary: 150000,
-      userId: 'usr-2'
+      userId: 'usr-2',
+      loginId: 'OIPRSH20210004'
     },
     leaveBalance: { casual: 12, casualUsed: 2, sick: 10, sickUsed: 1, annual: 20, annualUsed: 8, maternity: 60, maternityUsed: 0 },
     attendanceToday: 'Present'
   }
 ];
 
-export const initialAttendanceRecords: AttendanceRecord[] = [
+export const attendanceDB: AttendanceRecord[] = [
   {
     id: 'att-1',
     employeeId: 'DF-1001',
@@ -223,7 +243,7 @@ export const initialAttendanceRecords: AttendanceRecord[] = [
   }
 ];
 
-export const initialLeaveRequests: LeaveRequest[] = [
+export const leavesDB: LeaveRequest[] = [
   {
     id: 'lv-1',
     employeeId: 'DF-1001',
@@ -231,12 +251,14 @@ export const initialLeaveRequests: LeaveRequest[] = [
     employeeAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
     department: 'Design',
     leaveType: 'Paid Time Off (Annual)',
-    startDate: '2026-08-28',
-    endDate: '2026-08-30',
-    totalDays: 3,
-    reason: 'Family weekend travel & personal time.',
-    status: 'Pending',
-    appliedDate: '2026-08-21'
+    startDate: '2026-08-25',
+    endDate: '2026-08-28',
+    totalDays: 4,
+    reason: 'Family vacation & recharge.',
+    status: 'Approved',
+    appliedDate: '2026-08-15',
+    reviewedBy: 'Priya Sharma',
+    reviewDate: '2026-08-16'
   },
   {
     id: 'lv-2',
@@ -245,16 +267,16 @@ export const initialLeaveRequests: LeaveRequest[] = [
     employeeAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     department: 'Engineering',
     leaveType: 'Casual Leave',
-    startDate: '2026-09-04',
-    endDate: '2026-09-05',
+    startDate: '2026-08-28',
+    endDate: '2026-08-29',
     totalDays: 2,
-    reason: 'Home relocation tasks.',
+    reason: 'Personal appointments & moving.',
     status: 'Pending',
-    appliedDate: '2026-08-22'
+    appliedDate: '2026-08-21'
   }
 ];
 
-export const initialPayrollRecords: PayrollRecord[] = [
+export const payrollDB: PayrollRecord[] = [
   {
     id: 'pay-1',
     employeeId: 'DF-1001',
@@ -274,15 +296,25 @@ export const initialPayrollRecords: PayrollRecord[] = [
     status: 'Paid',
     payPeriod: 'August 2026',
     paymentDate: '2026-08-01'
+  },
+  {
+    id: 'pay-2',
+    employeeId: 'DF-1002',
+    employeeName: 'Alex Rivera',
+    employeeAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    department: 'Engineering',
+    designation: 'Senior Fullstack Engineer',
+    basicSalary: 9200,
+    hra: 1900,
+    allowances: 980,
+    bonus: 800,
+    providentFund: 720,
+    taxDeduction: 1600,
+    otherDeductions: 120,
+    grossSalary: 12880,
+    netSalary: 10440,
+    status: 'Paid',
+    payPeriod: 'August 2026',
+    paymentDate: '2026-08-01'
   }
 ];
-
-class Database {
-  users = [...initialUsers];
-  employees = [...initialEmployees];
-  attendance = [...initialAttendanceRecords];
-  leaves = [...initialLeaveRequests];
-  payroll = [...initialPayrollRecords];
-}
-
-export const db = new Database();
