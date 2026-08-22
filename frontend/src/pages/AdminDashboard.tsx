@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
   Clock,
@@ -8,7 +9,8 @@ import {
   ArrowUpRight,
   CheckCircle2,
   XCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Sparkles
 } from 'lucide-react';
 import { useHRMS } from '../context/HRMSContext';
 import { StatCard } from '../components/common/StatCard';
@@ -16,6 +18,7 @@ import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { departmentsSummary } from '../data/mockData';
 import { Link, useNavigate } from 'react-router-dom';
+import { triggerCelebration, triggerSuccessBurst } from '../utils/confetti';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -46,6 +49,11 @@ export const AdminDashboard: React.FC = () => {
 
   const pendingLeaves = leaveRequests.filter((l) => l.status === 'Pending');
 
+  const handleApproveLeave = async (id: string) => {
+    await updateLeaveStatus(id, 'Approved');
+    triggerSuccessBurst();
+  };
+
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmpForm.name || !newEmpForm.email) return;
@@ -64,20 +72,57 @@ export const AdminDashboard: React.FC = () => {
         joinDate: newEmpForm.joinDate
       }
     });
+    triggerCelebration();
     setIsAddEmployeeModalOpen(false);
     navigate(`/employee/${created.id}`);
   };
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Banner */}
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-8"
+    >
+      {/* Animated Welcome Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Floating Glowing Animated Blobs */}
+        <motion.div
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -30, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: 'easeInOut'
+          }}
+          className="absolute -right-10 -top-10 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl pointer-events-none"
+        />
+        <motion.div
+          animate={{
+            x: [0, -20, 0],
+            y: [0, 20, 0],
+            scale: [1, 1.15, 1]
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: 'easeInOut'
+          }}
+          className="absolute -left-10 -bottom-10 w-72 h-72 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"
+        />
+
         <div className="relative z-10 space-y-1.5">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-indigo-200 text-xs font-semibold backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <motion.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-indigo-200 text-xs font-semibold backdrop-blur-md"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             Live Operations Dashboard
-          </div>
+          </motion.div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
             Welcome back, Operations Command
           </h1>
@@ -87,24 +132,28 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="relative z-10 flex flex-wrap gap-3">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => setIsAddEmployeeModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md transition"
           >
             <UserPlus className="w-4 h-4" />
             Add Employee
-          </button>
-          <Link
-            to="/payroll"
-            className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl backdrop-blur-md transition"
-          >
-            <DollarSign className="w-4 h-4" />
-            Run Payroll
-          </Link>
+          </motion.button>
+          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+            <Link
+              to="/payroll"
+              className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl backdrop-blur-md transition"
+            >
+              <DollarSign className="w-4 h-4" />
+              Run Payroll
+            </Link>
+          </motion.div>
         </div>
       </div>
 
-      {/* KPI Stats Grid */}
+      {/* KPI Stats Grid with Motion */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
           title="Total Workforce"
@@ -149,7 +198,7 @@ export const AdminDashboard: React.FC = () => {
         />
       </div>
 
-      {/* Main Grid: Pending Approvals & Live Operations */}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
           {/* Pending Leave Approvals Section */}
@@ -165,57 +214,69 @@ export const AdminDashboard: React.FC = () => {
               </div>
               <Link
                 to="/time-off"
-                className="text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1"
+                className="text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 group"
               >
-                Calendar & Table View <ArrowUpRight className="w-3.5 h-3.5" />
+                Calendar & Table View <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </Link>
             </div>
 
             {pendingLeaves.length > 0 ? (
               <div className="divide-y divide-slate-100 dark:divide-slate-700/60 mt-2">
-                {pendingLeaves.slice(0, 4).map((req) => (
-                  <div key={req.id} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={req.employeeAvatar}
-                        alt={req.employeeName}
-                        className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 dark:ring-slate-700"
-                      />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-slate-900 dark:text-white">
-                            {req.employeeName}
-                          </span>
-                          <span className="text-xs text-slate-400">({req.department})</span>
+                <AnimatePresence>
+                  {pendingLeaves.map((req) => (
+                    <motion.div
+                      key={req.id}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 overflow-hidden"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={req.employeeAvatar}
+                          alt={req.employeeName}
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 dark:ring-slate-700"
+                        />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-bold text-slate-900 dark:text-white">
+                              {req.employeeName}
+                            </span>
+                            <span className="text-xs text-slate-400">({req.department})</span>
+                          </div>
+                          <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+                            <Badge variant="warning" size="sm">{req.leaveType}</Badge>
+                            <span>{req.startDate} to {req.endDate} ({req.totalDays} {req.totalDays === 1 ? 'day' : 'days'})</span>
+                          </div>
+                          <p className="text-xs text-slate-600 dark:text-slate-300 italic mt-1 bg-slate-50 dark:bg-slate-700/40 px-2.5 py-1 rounded-lg">
+                            "{req.reason}"
+                          </p>
                         </div>
-                        <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
-                          <Badge variant="warning" size="sm">{req.leaveType}</Badge>
-                          <span>{req.startDate} to {req.endDate} ({req.totalDays} {req.totalDays === 1 ? 'day' : 'days'})</span>
-                        </div>
-                        <p className="text-xs text-slate-600 dark:text-slate-300 italic mt-1 bg-slate-50 dark:bg-slate-700/40 px-2.5 py-1 rounded-lg">
-                          "{req.reason}"
-                        </p>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-center">
-                      <button
-                        onClick={() => updateLeaveStatus(req.id, 'Approved')}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => updateLeaveStatus(req.id, 'Rejected')}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-rose-50 hover:text-rose-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl transition"
-                      >
-                        <XCircle className="w-3.5 h-3.5" />
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-2 self-end sm:self-center">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleApproveLeave(req.id)}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Approve
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => updateLeaveStatus(req.id, 'Rejected')}
+                          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-rose-50 hover:text-rose-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl transition"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          Reject
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             ) : (
               <div className="py-12 text-center">
@@ -238,8 +299,9 @@ export const AdminDashboard: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
               {departmentsSummary.map((dept) => (
-                <div
+                <motion.div
                   key={dept.name}
+                  whileHover={{ y: -3, scale: 1.02 }}
                   className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700/50 hover:border-brand-300 transition"
                 >
                   <div className="flex items-center justify-between">
@@ -251,7 +313,7 @@ export const AdminDashboard: React.FC = () => {
                   <div className="mt-2 text-[11px] text-slate-400">
                     Lead: <span className="text-slate-600 dark:text-slate-300 font-medium">{dept.lead}</span>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -265,41 +327,49 @@ export const AdminDashboard: React.FC = () => {
               Quick Shortcuts
             </h2>
             <div className="grid grid-cols-2 gap-3">
-              <button
+              <motion.button
+                whileHover={{ y: -3, scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => setIsAddEmployeeModalOpen(true)}
                 className="p-3.5 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800 text-left hover:bg-indigo-100/70 transition group"
               >
                 <UserPlus className="w-5 h-5 text-brand-600 dark:text-brand-400 mb-2 group-hover:scale-110 transition" />
                 <div className="text-xs font-bold text-slate-900 dark:text-white">Add Staff</div>
                 <div className="text-[10px] text-slate-500">Odoo profile</div>
-              </button>
+              </motion.button>
 
-              <Link
-                to="/attendance"
-                className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800 text-left hover:bg-emerald-100/70 transition group"
-              >
-                <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-2 group-hover:scale-110 transition" />
-                <div className="text-xs font-bold text-slate-900 dark:text-white">Timesheets</div>
-                <div className="text-[10px] text-slate-500">Daily punch log</div>
-              </Link>
+              <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                <Link
+                  to="/attendance"
+                  className="block p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800 text-left hover:bg-emerald-100/70 transition group"
+                >
+                  <Clock className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mb-2 group-hover:scale-110 transition" />
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Timesheets</div>
+                  <div className="text-[10px] text-slate-500">Daily punch log</div>
+                </Link>
+              </motion.div>
 
-              <Link
-                to="/payroll"
-                className="p-3.5 rounded-2xl bg-blue-50/60 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 text-left hover:bg-blue-100/70 transition group"
-              >
-                <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400 mb-2 group-hover:scale-110 transition" />
-                <div className="text-xs font-bold text-slate-900 dark:text-white">Payslips</div>
-                <div className="text-[10px] text-slate-500">Disbursements</div>
-              </Link>
+              <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                <Link
+                  to="/payroll"
+                  className="block p-3.5 rounded-2xl bg-blue-50/60 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-800 text-left hover:bg-blue-100/70 transition group"
+                >
+                  <DollarSign className="w-5 h-5 text-blue-600 dark:text-blue-400 mb-2 group-hover:scale-110 transition" />
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Payslips</div>
+                  <div className="text-[10px] text-slate-500">Disbursements</div>
+                </Link>
+              </motion.div>
 
-              <Link
-                to="/reports"
-                className="p-3.5 rounded-2xl bg-purple-50/60 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-800 text-left hover:bg-purple-100/70 transition group"
-              >
-                <FileSpreadsheet className="w-5 h-5 text-purple-600 dark:text-purple-400 mb-2 group-hover:scale-110 transition" />
-                <div className="text-xs font-bold text-slate-900 dark:text-white">Analytics</div>
-                <div className="text-[10px] text-slate-500">Monthly reports</div>
-              </Link>
+              <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                <Link
+                  to="/reports"
+                  className="block p-3.5 rounded-2xl bg-purple-50/60 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-800 text-left hover:bg-purple-100/70 transition group"
+                >
+                  <FileSpreadsheet className="w-5 h-5 text-purple-600 dark:text-purple-400 mb-2 group-hover:scale-110 transition" />
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Analytics</div>
+                  <div className="text-[10px] text-slate-500">Monthly reports</div>
+                </Link>
+              </motion.div>
             </div>
           </div>
 
@@ -418,6 +488,6 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </form>
       </Modal>
-    </div>
+    </motion.div>
   );
 };

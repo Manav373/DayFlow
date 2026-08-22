@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   Grid,
@@ -85,6 +86,21 @@ export const EmployeeDirectory: React.FC = () => {
     navigate(`/employee/${created.id}`);
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.06
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15, scale: 0.98 },
+    show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.3 } }
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -103,13 +119,15 @@ export const EmployeeDirectory: React.FC = () => {
         {/* Manager Only: Add New Employee Button */}
         {isManager && (
           <div className="flex items-center gap-3">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => setIsAddModalOpen(true)}
               className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md transition"
             >
               <UserPlus className="w-4 h-4" />
               Add New Employee
-            </button>
+            </motion.button>
           </div>
         )}
       </div>
@@ -176,25 +194,34 @@ export const EmployeeDirectory: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid View */}
+      {/* Grid View with Stagger Animation */}
       {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        >
           {filteredEmployees.map((emp) => {
             const isOwnProfile = user?.employeeId === emp.employeeId;
 
             return (
-              <div
+              <motion.div
                 key={emp.id}
+                variants={itemVariants}
+                whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => navigate(`/employee/${emp.id}`)}
                 className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-soft hover:shadow-elevated hover:border-brand-300 dark:hover:border-brand-600 transition-all duration-200 cursor-pointer group flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3.5">
-                      <img
+                      <motion.img
+                        whileHover={{ scale: 1.08 }}
                         src={emp.avatar}
                         alt={emp.name}
-                        className="w-14 h-14 rounded-2xl object-cover ring-2 ring-slate-100 dark:ring-slate-700 group-hover:scale-105 transition"
+                        className="w-14 h-14 rounded-2xl object-cover ring-2 ring-slate-100 dark:ring-slate-700 shadow-sm"
                       />
                       <div>
                         <div className="flex items-center gap-1.5">
@@ -247,17 +274,21 @@ export const EmployeeDirectory: React.FC = () => {
                       {emp.workInfo.workSchedule.split(' ')[0]} Schedule
                     </span>
                   )}
-                  <span className="text-xs font-bold text-brand-600 dark:text-brand-400 flex items-center gap-1 group-hover:underline">
+                  <span className="text-xs font-bold text-brand-600 dark:text-brand-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                     {isOwnProfile || isManager ? 'Odoo Profile' : 'View Profile'} <ExternalLink className="w-3.5 h-3.5" />
                   </span>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       ) : (
         /* Table View */
-        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 shadow-soft overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 shadow-soft overflow-hidden"
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
@@ -315,10 +346,10 @@ export const EmployeeDirectory: React.FC = () => {
               </tbody>
             </table>
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {/* Add Employee Modal (Admin / HR only) */}
+      {/* Add Employee Modal */}
       {isManager && (
         <Modal
           isOpen={isAddModalOpen}

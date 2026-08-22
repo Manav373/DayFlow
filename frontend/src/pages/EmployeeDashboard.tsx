@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock,
   Play,
@@ -7,13 +8,15 @@ import {
   CalendarOff,
   CreditCard,
   FileText,
-  UserCheck
+  UserCheck,
+  Sparkles
 } from 'lucide-react';
 import { useHRMS } from '../context/HRMSContext';
 import { useAuth } from '../context/AuthContext';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { Link } from 'react-router-dom';
+import { triggerCelebration, triggerSuccessBurst } from '../utils/confetti';
 
 export const EmployeeDashboard: React.FC = () => {
   const {
@@ -47,6 +50,13 @@ export const EmployeeDashboard: React.FC = () => {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handlePunchClick = async () => {
+    await togglePunch();
+    if (!isPunchedIn) {
+      triggerSuccessBurst();
+    }
+  };
+
   const handleLeaveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leaveForm.startDate || !leaveForm.endDate || !leaveForm.reason) return;
@@ -63,6 +73,7 @@ export const EmployeeDashboard: React.FC = () => {
       totalDays: diffDays > 0 ? diffDays : 1
     });
 
+    triggerCelebration();
     setIsLeaveModalOpen(false);
     setLeaveForm({
       leaveType: 'Paid Time Off (Annual)',
@@ -79,11 +90,28 @@ export const EmployeeDashboard: React.FC = () => {
   const progressPercent = Math.min(Math.round((workSeconds / targetShiftSeconds) * 100), 100);
 
   return (
-    <div className="space-y-8">
-      {/* Hero Welcome Card */}
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-8"
+    >
+      {/* Hero Welcome Card with Motion Blobs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-r from-brand-700 via-indigo-700 to-indigo-900 text-white rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden">
+        {/* Animated Glowing Orbs */}
+        <motion.div
+          animate={{
+            x: [0, 25, 0],
+            y: [0, -25, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -right-8 -top-8 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none"
+        />
+
         <div className="flex items-center gap-5 relative z-10">
-          <img
+          <motion.img
+            whileHover={{ scale: 1.06 }}
             src={currentUser.avatar}
             alt={currentUser.name}
             className="w-16 h-16 md:w-20 md:h-20 rounded-2xl object-cover ring-4 ring-white/20 shadow-lg"
@@ -107,27 +135,34 @@ export const EmployeeDashboard: React.FC = () => {
         </div>
 
         <div className="relative z-10 flex flex-wrap gap-3">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
             onClick={() => setIsLeaveModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-white text-indigo-900 hover:bg-indigo-50 text-xs font-bold rounded-xl shadow-md transition"
           >
             <CalendarOff className="w-4 h-4 text-brand-600" />
             Apply for Time Off
-          </button>
-          <Link
-            to={`/employee/${currentUser.id}`}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white/20 text-white hover:bg-white/30 text-xs font-bold rounded-xl backdrop-blur-md transition"
-          >
-            <UserCheck className="w-4 h-4" />
-            Edit My Profile Tabs
-          </Link>
+          </motion.button>
+          <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+            <Link
+              to={`/employee/${currentUser.id}`}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white/20 text-white hover:bg-white/30 text-xs font-bold rounded-xl backdrop-blur-md transition"
+            >
+              <UserCheck className="w-4 h-4" />
+              Edit My Profile Tabs
+            </Link>
+          </motion.div>
         </div>
       </div>
 
       {/* 2-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Col: Live Attendance Punch-In Card */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-soft flex flex-col justify-between">
+        <motion.div
+          whileHover={{ y: -3 }}
+          className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-6 shadow-soft flex flex-col justify-between"
+        >
           <div>
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">
               <div>
@@ -155,9 +190,11 @@ export const EmployeeDashboard: React.FC = () => {
                   <span>{progressPercent}%</span>
                 </div>
                 <div className="w-full h-2.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-brand-500 to-emerald-500 transition-all duration-500"
-                    style={{ width: `${progressPercent}%` }}
+                  <motion.div
+                    className="h-full rounded-full bg-gradient-to-r from-brand-500 to-emerald-500"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressPercent}%` }}
+                    transition={{ duration: 0.8, ease: 'easeOut' }}
                   />
                 </div>
               </div>
@@ -165,8 +202,10 @@ export const EmployeeDashboard: React.FC = () => {
           </div>
 
           <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
-            <button
-              onClick={() => togglePunch()}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handlePunchClick}
               className={`w-full flex items-center justify-center gap-2.5 py-3 rounded-2xl font-bold text-sm shadow-md transition-all duration-200 ${
                 isPunchedIn
                   ? 'bg-rose-500 hover:bg-rose-600 text-white'
@@ -184,9 +223,9 @@ export const EmployeeDashboard: React.FC = () => {
                   Clock In Now
                 </>
               )}
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
         {/* Right 2 Cols: Leave Balances & Upcoming Holidays */}
         <div className="lg:col-span-2 space-y-6">
@@ -208,41 +247,41 @@ export const EmployeeDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
-              <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/60">
+              <motion.div whileHover={{ y: -3, scale: 1.02 }} className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/60">
                 <div className="text-xs font-bold text-indigo-700 dark:text-indigo-300">Annual PTO</div>
                 <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">
                   {currentUser.leaveBalance.annual - currentUser.leaveBalance.annualUsed}
                   <span className="text-xs font-semibold text-slate-400">/{currentUser.leaveBalance.annual}</span>
                 </div>
                 <div className="text-[10px] text-slate-500 mt-1">{currentUser.leaveBalance.annualUsed} days utilized</div>
-              </div>
+              </motion.div>
 
-              <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/60">
+              <motion.div whileHover={{ y: -3, scale: 1.02 }} className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/60">
                 <div className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Sick Leave</div>
                 <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">
                   {currentUser.leaveBalance.sick - currentUser.leaveBalance.sickUsed}
                   <span className="text-xs font-semibold text-slate-400">/{currentUser.leaveBalance.sick}</span>
                 </div>
                 <div className="text-[10px] text-slate-500 mt-1">{currentUser.leaveBalance.sickUsed} days utilized</div>
-              </div>
+              </motion.div>
 
-              <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800/60">
+              <motion.div whileHover={{ y: -3, scale: 1.02 }} className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800/60">
                 <div className="text-xs font-bold text-amber-700 dark:text-amber-300">Casual Leave</div>
                 <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">
                   {currentUser.leaveBalance.casual - currentUser.leaveBalance.casualUsed}
                   <span className="text-xs font-semibold text-slate-400">/{currentUser.leaveBalance.casual}</span>
                 </div>
                 <div className="text-[10px] text-slate-500 mt-1">{currentUser.leaveBalance.casualUsed} days utilized</div>
-              </div>
+              </motion.div>
 
-              <div className="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-800/60">
+              <motion.div whileHover={{ y: -3, scale: 1.02 }} className="p-4 rounded-2xl bg-purple-50/70 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-800/60">
                 <div className="text-xs font-bold text-purple-700 dark:text-purple-300">Parental</div>
                 <div className="text-2xl font-black text-slate-900 dark:text-white mt-1">
                   {currentUser.leaveBalance.maternity - currentUser.leaveBalance.maternityUsed}
                   <span className="text-xs font-semibold text-slate-400">/{currentUser.leaveBalance.maternity}</span>
                 </div>
                 <div className="text-[10px] text-slate-500 mt-1">Special entitlement</div>
-              </div>
+              </motion.div>
             </div>
           </div>
 
@@ -259,7 +298,11 @@ export const EmployeeDashboard: React.FC = () => {
             {myLeaves.length > 0 ? (
               <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
                 {myLeaves.map((l) => (
-                  <div key={l.id} className="py-3 flex items-center justify-between">
+                  <motion.div
+                    key={l.id}
+                    whileHover={{ x: 3 }}
+                    className="py-3 flex items-center justify-between transition-transform"
+                  >
                     <div>
                       <div className="text-xs font-bold text-slate-900 dark:text-white">
                         {l.leaveType} ({l.totalDays} {l.totalDays === 1 ? 'day' : 'days'})
@@ -274,7 +317,7 @@ export const EmployeeDashboard: React.FC = () => {
                     >
                       {l.status}
                     </Badge>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             ) : (
@@ -302,7 +345,11 @@ export const EmployeeDashboard: React.FC = () => {
 
           <div className="divide-y divide-slate-100 dark:divide-slate-700/60 mt-2">
             {myPayslips.map((pay) => (
-              <div key={pay.id} className="py-3.5 flex items-center justify-between">
+              <motion.div
+                key={pay.id}
+                whileHover={{ x: 3 }}
+                className="py-3.5 flex items-center justify-between"
+              >
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-brand-600">
                     <FileText className="w-5 h-5" />
@@ -317,13 +364,15 @@ export const EmployeeDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedPayslip(pay)}
                   className="px-3 py-1.5 text-xs font-bold text-brand-600 bg-brand-50 dark:bg-brand-950/40 hover:bg-brand-100 rounded-xl transition"
                 >
                   View Slip
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -334,7 +383,7 @@ export const EmployeeDashboard: React.FC = () => {
             Upcoming Holidays & Events
           </h2>
           <div className="space-y-3">
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <motion.div whileHover={{ scale: 1.02 }} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 flex items-center justify-center font-bold text-xs">
                   SEP 07
@@ -345,9 +394,9 @@ export const EmployeeDashboard: React.FC = () => {
                 </div>
               </div>
               <Badge variant="info" size="sm">National</Badge>
-            </div>
+            </motion.div>
 
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <motion.div whileHover={{ scale: 1.02 }} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 flex items-center justify-center font-bold text-xs">
                   OCT 15
@@ -358,7 +407,7 @@ export const EmployeeDashboard: React.FC = () => {
                 </div>
               </div>
               <Badge variant="primary" size="sm">Townhall</Badge>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>
@@ -538,6 +587,6 @@ export const EmployeeDashboard: React.FC = () => {
           </div>
         </Modal>
       )}
-    </div>
+    </motion.div>
   );
 };

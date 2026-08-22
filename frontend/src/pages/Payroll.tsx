@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   CreditCard,
   DollarSign,
@@ -14,6 +15,7 @@ import { PayrollRecord } from '../types';
 import { Badge } from '../components/common/Badge';
 import { StatCard } from '../components/common/StatCard';
 import { Modal } from '../components/common/Modal';
+import { triggerCelebration } from '../utils/confetti';
 
 export const Payroll: React.FC = () => {
   const {
@@ -56,10 +58,16 @@ export const Payroll: React.FC = () => {
         updatePayrollStatus(p.id, 'Paid');
       }
     });
+    triggerCelebration();
   };
 
   return (
-    <div className="space-y-8">
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-8"
+    >
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -75,13 +83,15 @@ export const Payroll: React.FC = () => {
 
         {isManager && (
           <div className="flex items-center gap-3">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
               onClick={handleRunBatch}
               className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-md transition"
             >
               <CheckCircle className="w-4 h-4" />
               Approve & Disburse Batch
-            </button>
+            </motion.button>
           </div>
         )}
       </div>
@@ -181,7 +191,11 @@ export const Payroll: React.FC = () => {
       </div>
 
       {/* Payroll Table */}
-      <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 shadow-soft overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 shadow-soft overflow-hidden"
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
@@ -238,19 +252,21 @@ export const Payroll: React.FC = () => {
                     </Badge>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => setSelectedPayslip(pay)}
                       className="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 dark:bg-brand-950/40 text-brand-600 dark:text-brand-300 font-bold rounded-xl transition"
                     >
                       View Payslip
-                    </button>
+                    </motion.button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      </motion.div>
 
       {/* Payslip View Modal */}
       {selectedPayslip && (
@@ -336,27 +352,32 @@ export const Payroll: React.FC = () => {
 
             <div className="flex justify-between items-center pt-2">
               {isManager && selectedPayslip.status !== 'Paid' && (
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
                   onClick={() => {
                     updatePayrollStatus(selectedPayslip.id, 'Paid');
+                    triggerCelebration();
                     setSelectedPayslip(null);
                   }}
                   className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl transition"
                 >
                   Mark as Paid
-                </button>
+                </motion.button>
               )}
-              <button
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
                 onClick={() => window.print()}
                 className="ml-auto flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 rounded-xl transition"
               >
                 <Printer className="w-4 h-4" />
                 Print / Export Payslip
-              </button>
+              </motion.button>
             </div>
           </div>
         </Modal>
       )}
-    </div>
+    </motion.div>
   );
 };
