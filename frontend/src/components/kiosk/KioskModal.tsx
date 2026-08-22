@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Clock, CheckCircle2, AlertCircle, X, Shield, KeyRound, UserCheck } from 'lucide-react';
+import { CheckCircle2, AlertCircle, KeyRound, Clock } from 'lucide-react';
 import { useHRMS } from '../../context/HRMSContext';
+import { useAuth } from '../../context/AuthContext';
 import { Modal } from '../common/Modal';
 
 interface KioskModalProps {
@@ -10,6 +11,9 @@ interface KioskModalProps {
 
 export const KioskModal: React.FC<KioskModalProps> = ({ isOpen, onClose }) => {
   const { employees, togglePunch } = useHRMS();
+  const { user } = useAuth();
+  const isManager = user?.role === 'admin' || user?.role === 'hr_officer';
+
   const [pin, setPin] = useState('');
   const [selectedEmpId, setSelectedEmpId] = useState('');
   const [punchResult, setPunchResult] = useState<{ success: boolean; msg: string; name?: string } | null>(null);
@@ -47,7 +51,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({ isOpen, onClose }) => {
       setSelectedEmpId('');
       setPunchResult(null);
       onClose();
-    }, 2500);
+    }, 2200);
   };
 
   if (!isOpen) return null;
@@ -60,7 +64,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({ isOpen, onClose }) => {
       subtitle="Enter your 4-digit PIN or select profile to Check-In / Out"
       maxWidth="md"
     >
-      <div className="space-y-6">
+      <div className="space-y-5">
         {punchResult ? (
           <div
             className={`p-6 rounded-2xl text-center space-y-2 ${
@@ -82,7 +86,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({ isOpen, onClose }) => {
             {/* Quick Employee Select */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Select Team Member (or use PIN below)
+                Select Team Member
               </label>
               <select
                 value={selectedEmpId}
@@ -92,7 +96,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({ isOpen, onClose }) => {
                 <option value="">-- Choose Employee --</option>
                 {employees.map((emp) => (
                   <option key={emp.id} value={emp.employeeId}>
-                    {emp.name} ({emp.employeeId}) • PIN: {emp.hrSettings.pinCode}
+                    {emp.name} ({emp.employeeId}) • {emp.workInfo.department} {isManager ? `(PIN: ${emp.hrSettings.pinCode})` : ''}
                   </option>
                 ))}
               </select>
@@ -134,7 +138,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({ isOpen, onClose }) => {
                     key === 'OK'
                       ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
                       : key === 'C'
-                      ? 'bg-rose-50 hover:bg-rose-100 text-rose-600'
+                      ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300'
                       : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-900 dark:text-white'
                   }`}
                 >
